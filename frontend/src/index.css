@@ -1,0 +1,21 @@
+@import "tailwindcss";
+:root {
+  --outer-space: #161618;
+  --off-white: #faf9f6;
+  --gray: #6b7280;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  background-color: var(--off-white);
+  color: var(--outer-space);
+  font-family: "Lexend", sans-serif;
+}
+
+.dark {
+  background-color: #121212;
+  color: #f9fafb;
+}
