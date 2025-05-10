@@ -7,7 +7,7 @@ import {
 
 const ProfileNavigation = ({ activeTab, setActiveTab }) => {
   return (
-    <div className="h-full w-full bg-white flex flex-col border-gray-200 overflow-hidden rounded-lg">
+    <div className="h-full w-full flex flex-col bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
       {/* Fixed Header */}
       <div className="p-4 border-b border-gray-100">
         <h1 className="text-2xl font-bold text-blue-600">Profile</h1>

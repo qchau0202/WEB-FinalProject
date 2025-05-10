@@ -1,19 +1,21 @@
 import { useState, useEffect } from "react";
 import { Button, Tooltip, Dropdown, Menu } from "antd";
 import { spaces } from "../../mock-data/notes";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
   DownOutlined,
   RightOutlined,
   FileTextOutlined,
   PlusOutlined,
-  StarOutlined,
   SettingOutlined,
   MenuUnfoldOutlined,
   MenuFoldOutlined,
   LogoutOutlined,
   UserOutlined,
+  PushpinOutlined,
+  ExclamationCircleFilled,
+  CloseOutlined,
 } from "@ant-design/icons";
 
 const Sidebar = ({ onSpaceSelect, selectedSpace, collapsed, setCollapsed }) => {
@@ -21,6 +23,11 @@ const Sidebar = ({ onSpaceSelect, selectedSpace, collapsed, setCollapsed }) => {
   const [spacesOpen, setSpacesOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [localCollapsed, setLocalCollapsed] = useState(false);
+  const [showVerification, setShowVerification] = useState(() => {
+    // Only show if user is not verified
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    return currentUser && currentUser.isVerified === false;
+  });
 
   // Get current user from localStorage
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
@@ -78,9 +85,9 @@ const Sidebar = ({ onSpaceSelect, selectedSpace, collapsed, setCollapsed }) => {
 
   return (
     <div
-      className={`h-screen bg-white flex flex-col border-r border-gray-200 transition-all overflow-y-auto fixed md:relative z-50 ${
+      className={`h-screen bg-white flex flex-col border-r border-gray-200 transition-all overflow-y-auto ${
         isCollapsed ? "w-16" : "w-64"
-      } ${isMobile && !isCollapsed ? "shadow-lg" : ""}`}
+      } ${isMobile ? "fixed z-50" : "relative"}`}
     >
       {/* Header */}
       <div
@@ -89,9 +96,11 @@ const Sidebar = ({ onSpaceSelect, selectedSpace, collapsed, setCollapsed }) => {
         } border-b border-gray-100`}
       >
         {!isCollapsed && (
-          <h1 className="text-xl md:text-2xl font-bold text-blue-600">
-            Notelit
-          </h1>
+          <Link to="/">
+            <h1 className="text-xl md:text-2xl font-bold text-blue-600">
+              Notelit
+            </h1>
+          </Link>
         )}
         <Button
           type="text"
@@ -102,7 +111,7 @@ const Sidebar = ({ onSpaceSelect, selectedSpace, collapsed, setCollapsed }) => {
       </div>
 
       {/* Main Navigation */}
-      <div className="flex-1 overflow-y-auto py-2">
+      <div className="flex-1 overflow-y-auto py-2 flex flex-col">
         {/* Quick Access */}
         <div className={`px-3 ${isCollapsed ? "mb-2" : "mb-4"}`}>
           {!isCollapsed && (
@@ -119,7 +128,7 @@ const Sidebar = ({ onSpaceSelect, selectedSpace, collapsed, setCollapsed }) => {
             <Tooltip title={isCollapsed ? "All Notes" : ""} placement="right">
               <div
                 className={`flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer ${
-                  !selectedSpace
+                  !selectedSpace && selectedSpace !== "pinned"
                     ? "bg-blue-50 text-blue-600"
                     : "hover:bg-gray-100 text-gray-700"
                 }`}
@@ -136,18 +145,23 @@ const Sidebar = ({ onSpaceSelect, selectedSpace, collapsed, setCollapsed }) => {
               </div>
             </Tooltip>
 
-            <Tooltip title={isCollapsed ? "Favorites" : ""} placement="right">
+            <Tooltip title={isCollapsed ? "Pinned" : ""} placement="right">
               <div
-                className="flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer hover:bg-gray-100 text-gray-700"
+                className={`flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer ${
+                  selectedSpace === "pinned"
+                    ? "bg-blue-50 text-blue-600"
+                    : "hover:bg-gray-100 text-gray-700"
+                }`}
                 onClick={() => {
-                  navigate("/favorites");
+                  onSpaceSelect("pinned");
+                  navigate("/pinned");
                   if (isMobile) {
                     setCollapsed?.(true);
                   }
                 }}
               >
-                <StarOutlined />
-                {!isCollapsed && <span>Favorites</span>}
+                <PushpinOutlined />
+                {!isCollapsed && <span>Pinned</span>}
               </div>
             </Tooltip>
           </div>
@@ -161,7 +175,7 @@ const Sidebar = ({ onSpaceSelect, selectedSpace, collapsed, setCollapsed }) => {
               onClick={() => setSpacesOpen(!spacesOpen)}
             >
               <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Spaces
+                Labels
               </h2>
               {spacesOpen ? (
                 <DownOutlined className="text-gray-400 text-xs" />
@@ -226,6 +240,36 @@ const Sidebar = ({ onSpaceSelect, selectedSpace, collapsed, setCollapsed }) => {
           isCollapsed ? "flex justify-center" : ""
         }`}
       >
+        {/* Verification warning above user info in footer */}
+        {!isCollapsed &&
+          showVerification &&
+          currentUser &&
+          currentUser.isVerified === false && (
+            <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md flex items-start gap-3 relative">
+              <ExclamationCircleFilled className="text-yellow-500 text-lg mt-0.5" />
+              <div className="flex-1 min-w-0 text-xs text-yellow-800">
+                Your account is not verified. Please check your email to
+                activate your account. <br />
+                <button
+                  className="text-blue-600 hover:underline text-xs mt-1"
+                  onClick={() => {
+                    setShowVerification(false);
+                    navigate(`/profile/${currentUser.id}`);
+                  }}
+                >
+                  Account overview
+                </button>
+              </div>
+              <button
+                className="absolute top-2 right-2 text-yellow-500 hover:text-yellow-700 text-xs"
+                onClick={() => setShowVerification(false)}
+                aria-label="Close notification"
+              >
+                <CloseOutlined />
+              </button>
+            </div>
+          )}
+        {/* User info */}
         {isCollapsed ? (
           <Tooltip title="Settings" placement="right">
             <Dropdown

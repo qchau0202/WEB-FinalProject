@@ -127,7 +127,7 @@ const NoteTags = ({ tags, onAddTag, onClick, isDetailView }) => {
                 </div>
               }
               color={customColor}
-              key={customColor}
+                key={customColor}                
             >
               <span
                 className="cursor-pointer rounded-full flex-shrink-0 px-2 py-1 text-sm font-medium border border-gray-300 text-blue-500 bg-white transition-colors"

@@ -20,6 +20,15 @@ const Note = ({ note, onUpdate, onDelete, viewMode, isDetailView = false }) => {
     onUpdate({ ...note, tags: updatedTags });
   };
 
+  const handlePin = (noteId) => {
+    const updatedNote = {
+      ...note,
+      isPinned: !note.isPinned,
+    };
+    onUpdate(updatedNote);
+    message.success(updatedNote.isPinned ? "Note pinned" : "Note unpinned");
+  };
+
   const handleDrop = (e) => {
     e.preventDefault();
     const droppedFiles = Array.from(e.dataTransfer.files);
@@ -79,10 +88,9 @@ const Note = ({ note, onUpdate, onDelete, viewMode, isDetailView = false }) => {
           ? "auto"
           : viewMode === "grid"
           ? "220px"
-          : "120px",
-        height: isDetailView ? "auto" : "auto",
+          : undefined,
+        height: isDetailView ? "auto" : undefined,
         maxWidth: "100%",
-        overflow: "hidden",
       }}
     >
       <NoteHeader
@@ -95,6 +103,7 @@ const Note = ({ note, onUpdate, onDelete, viewMode, isDetailView = false }) => {
         setConfirmDelete={setConfirmDelete}
         handleInput={handleInput}
         content={content}
+        onPin={handlePin}
       />
       <NoteContent
         content={content}

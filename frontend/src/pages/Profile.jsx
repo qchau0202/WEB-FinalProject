@@ -23,17 +23,17 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-gray-100">
-      <div className="flex flex-col md:flex-row sm:gap-4 w-full max-w-6xl h-[80vh] sm:h-[85vh] overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6">
+      <div className="flex flex-col md:flex-row gap-4 sm:gap-4 w-full max-w-6xl h-[80vh] sm:h-[85vh] overflow-hidden">
         {/* Navigation Card */}
-        <div className="md:w-1/4">
+        <div className="md:w-1/4 py-2">
           <ProfileNavigation
             activeTab={activeTab}
             setActiveTab={setActiveTab}
           />
         </div>
         {/* Content Card */}
-        <div className="md:w-3/4">
+        <div className="md:w-3/4 py-2">
           <ProfileContent user={user} activeTab={activeTab} />
         </div>
       </div>

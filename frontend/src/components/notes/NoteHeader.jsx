@@ -4,8 +4,15 @@ import {
   DeleteOutlined,
   ExpandOutlined,
   EllipsisOutlined,
+  PushpinOutlined,
 } from "@ant-design/icons";
+import { AiOutlineUsergroupAdd } from "react-icons/ai";
 import { Button, Dropdown, Menu, Tooltip } from "antd";
+
+const formatDate = (dateString) => {
+  if (!dateString) return "";
+  return new Date(dateString).toISOString().split("T")[0];
+};
 
 const NoteHeader = ({
   title,
@@ -16,9 +23,13 @@ const NoteHeader = ({
   setConfirmDelete,
   handleInput,
   content,
+  onPin,
 }) => {
   const menu = (
     <Menu>
+      <Menu.Item key="invite" onClick={(e) => e.domEvent.stopPropagation()}>
+        <span className="text-base">Invite</span>
+      </Menu.Item>
       <Menu.Item
         key="delete"
         onClick={(e) => {
@@ -27,9 +38,6 @@ const NoteHeader = ({
         }}
       >
         <span className="text-base">Delete Note</span>
-      </Menu.Item>
-      <Menu.Item key="share" onClick={(e) => e.domEvent.stopPropagation()}>
-        <span className="text-base">Share Note</span>
       </Menu.Item>
     </Menu>
   );
@@ -61,8 +69,22 @@ const NoteHeader = ({
                 </div>
               </div>
               <div className="flex gap-2">
-                <Tooltip title="Share">
-                  <Button icon={<ShareAltOutlined />} className="text-lg" />
+                <Tooltip title={note.isPinned ? "Unpin" : "Pin"}>
+                  <Button
+                    icon={<PushpinOutlined />}
+                    type={note.isPinned ? "primary" : "default"}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onPin(note.id);
+                    }}
+                    className="text-lg"
+                  />
+                </Tooltip>
+                <Tooltip title="Invite">
+                  <Button
+                    icon={<AiOutlineUsergroupAdd />}
+                    className="text-lg"
+                  />
                 </Tooltip>
                 <Tooltip title="Delete">
                   <Button
@@ -99,13 +121,28 @@ const NoteHeader = ({
             }}
           />
           <div className="text-sm text-gray-400 mt-1">
-            {note.updatedAt
-              ? `Updated: ${note.updatedAt}`
-              : `Created: ${note.createdAt}`}
+            {note.updatedAt && note.updatedAt !== note.createdAt ? (
+              <>Updated: {formatDate(note.updatedAt)}</>
+            ) : (
+              <>Created: {formatDate(note.createdAt)}</>
+            )}
           </div>
         </div>
         {!isDetailView && (
           <div className="flex items-center gap-2">
+            <Tooltip title={note.isPinned ? "Unpin" : "Pin"}>
+              <div
+                className={`p-1 rounded-full hover:bg-gray-100 cursor-pointer ${
+                  note.isPinned ? "text-blue-500" : "text-gray-400"
+                }`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPin(note.id);
+                }}
+              >
+                <PushpinOutlined className="text-lg" />
+              </div>
+            </Tooltip>
             <Tooltip title="View Details">
               <div
                 className="p-1 rounded-full hover:bg-gray-100 cursor-pointer"
@@ -117,18 +154,20 @@ const NoteHeader = ({
                 <ExpandOutlined className="text-gray-400 text-lg" />
               </div>
             </Tooltip>
-            <Dropdown
-              overlay={menu}
-              trigger={["click"]}
-              placement="bottomRight"
-            >
-              <div
-                className="p-1 rounded-full hover:bg-gray-100"
-                onClick={(e) => e.stopPropagation()}
+            <Tooltip title="More">
+              <Dropdown
+                overlay={menu}
+                trigger={["click"]}
+                placement="bottomRight"
               >
-                <EllipsisOutlined className="text-gray-400 text-lg" />
-              </div>
-            </Dropdown>
+                <div
+                  className="p-1 rounded-full hover:bg-gray-100"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <EllipsisOutlined className="text-gray-400 text-lg" />
+                </div>
+              </Dropdown>
+            </Tooltip>
           </div>
         )}
       </div>

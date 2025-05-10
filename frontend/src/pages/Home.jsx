@@ -1,47 +1,71 @@
 import { useState } from "react";
 import useNoteManagement from "../hooks/useNoteManagement";
 import Note from "../components/notes/Note";
-import { Button, Input, Select, Empty, Spin } from "antd";
+import {
+  Button,
+  Input,
+  Select,
+  Empty,
+  Spin,
+  Badge,
+  Dropdown,
+  Menu,
+} from "antd";
 import {
   AppstoreOutlined,
   UnorderedListOutlined,
   SearchOutlined,
   SortAscendingOutlined,
   PlusOutlined,
+  DownOutlined,
+  UpOutlined,
+  PushpinOutlined,
+  RightOutlined,
 } from "@ant-design/icons";
+import { MdNotifications } from "react-icons/md";
 import { useSpace } from "../contexts/SpacesContext";
-
+import { useNavigate } from "react-router-dom";
+import Notifications from "../components/common/Notifications";
+import notificationsData from "../mock-data/notifications";
 const { Option } = Select;
 
 const Home = () => {
+  const navigate = useNavigate();
   const { selectedSpace } = useSpace();
-  const { notes, addNote, updateNote, deleteNote, loading } =
-    useNoteManagement();
+  const {
+    notes,
+    addNote,
+    updateNote,
+    deleteNote,
+    loading,
+    filterAndSortNotes,
+    togglePinNote,
+  } = useNoteManagement();
   const [viewMode, setViewMode] = useState("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("manual");
+  const [isPinnedExpanded, setIsPinnedExpanded] = useState(true);
+  const [notificationVisible, setNotificationVisible] = useState(false);
+  const [showAllNotifications, setShowAllNotifications] = useState(false);
+  const notifications = notificationsData;
+  const unreadCount = notifications.length;
 
-  const filteredNotes = notes
-    .filter((note) => (selectedSpace ? note.spaceId === selectedSpace : true))
-    .filter((note) =>
-      searchQuery
-        ? note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          note.content.toLowerCase().includes(searchQuery.toLowerCase())
-        : true
-    );
-
-  const sortedNotes = [...filteredNotes].sort((a, b) => {
-    if (sortBy === "manual") {
-      return a.order - b.order;
-    } else if (sortBy === "newest") {
-      return new Date(b.createdAt) - new Date(a.createdAt);
-    } else if (sortBy === "oldest") {
-      return new Date(a.createdAt) - new Date(b.createdAt);
-    } else if (sortBy === "title") {
-      return a.title.localeCompare(b.title);
-    }
-    return 0;
+  const sortedNotes = filterAndSortNotes(notes, {
+    searchQuery,
+    sortBy,
+    selectedSpace,
+    showPinnedOnly: false,
   });
+
+  const pinnedNotes = filterAndSortNotes(notes, {
+    searchQuery,
+    sortBy,
+    selectedSpace,
+    showPinnedOnly: true,
+  });
+
+  const displayedPinnedNotes = pinnedNotes.slice(0, 4);
+  const remainingPinnedCount = Math.max(0, pinnedNotes.length - 4);
 
   const newNotePlaceholder = {
     id: Date.now().toString(),
@@ -51,6 +75,8 @@ const Home = () => {
     files: [],
     spaceId: selectedSpace || null,
     createdAt: new Date().toISOString().split("T")[0],
+    isPinned: false,
+    order: notes.length,
   };
 
   const handleCreateNewNote = () => {
@@ -63,9 +89,18 @@ const Home = () => {
     return space ? space.name : "Selected Space";
   };
 
+  const handleNoteClick = (noteId) => {
+    navigate(`/notes/${noteId}`);
+  };
+
+  const handleShowMore = (e) => {
+    e.stopPropagation();
+    setShowAllNotifications(true);
+  };
+
   return (
-    <div className="h-full overflow-y-auto bg-gray-50">
-      <div className="p-4 md:p-6 lg:p-8 max-w-[2000px] mx-auto">
+    <div className="overflow-y-auto">
+      <div className="p-4 md:p-6 lg:p-8 mx-auto">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-800 truncate">
             {getSpaceName()}
@@ -80,12 +115,11 @@ const Home = () => {
             />
             <div className="flex gap-2 w-full md:w-auto">
               <Select
-                defaultValue="manual"
+                defaultValue="newest"
                 onChange={(value) => setSortBy(value)}
                 suffixIcon={<SortAscendingOutlined className="text-lg" />}
                 className="w-full md:w-32 text-base"
               >
-                <Option value="manual">Manual</Option>
                 <Option value="newest">Newest</Option>
                 <Option value="oldest">Oldest</Option>
                 <Option value="title">Title</Option>
@@ -114,9 +148,117 @@ const Home = () => {
                   className="text-lg"
                 />
               </div>
+              <Dropdown
+                overlay={
+                  <Notifications
+                    notifications={notifications}
+                    max={showAllNotifications ? notifications.length : 3}
+                    onShowMore={handleShowMore}
+                  />
+                }
+                trigger={["click"]}
+                visible={notificationVisible}
+                onVisibleChange={(visible) => {
+                  setNotificationVisible(visible);
+                  if (!visible) setShowAllNotifications(false);
+                }}
+                placement="bottomRight"
+              >
+                <Badge count={unreadCount} size="small" offset={[-2, 2]}>
+                  <Button icon={<MdNotifications />} className="text-lg" />
+                </Badge>
+              </Dropdown>
             </div>
           </div>
         </div>
+
+        {/* Pinned notes section */}
+        {pinnedNotes.length > 0 && (
+          <div className="mb-8">
+            <div
+              className="flex items-center justify-between cursor-pointer mb-4"
+              onClick={() => setIsPinnedExpanded(!isPinnedExpanded)}
+            >
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-semibold text-gray-800">
+                  Pinned Notes
+                </h2>
+                <Button
+                  type="text"
+                  icon={isPinnedExpanded ? <DownOutlined /> : <UpOutlined />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsPinnedExpanded(!isPinnedExpanded);
+                  }}
+                  className="border-1"
+                />
+              </div>
+            </div>
+            <div
+              className={`transition-all duration-300 ease-in-out ${
+                isPinnedExpanded
+                  ? "opacity-100 max-h-[500px]"
+                  : "opacity-0 max-h-0 overflow-hidden"
+              }`}
+            >
+              <div className="flex gap-4">
+                {displayedPinnedNotes.map((note) => (
+                  <div
+                    key={note.id}
+                    className="flex-none w-64 bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all duration-200 cursor-pointer"
+                    onClick={() => handleNoteClick(note.id)}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-medium text-gray-900 truncate">
+                        {note.title}
+                      </h3>
+                      <Button
+                        icon={<PushpinOutlined />}
+                        type="primary"
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          togglePinNote(note.id);
+                        }}
+                        className="text-gray-500 hover:text-blue-500 transition-colors duration-200"
+                      />
+                    </div>
+                    <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+                      <span>
+                        {new Date(
+                          note.updatedAt || note.createdAt
+                        ).toLocaleDateString()}
+                      </span>
+                      {note.tags?.length > 0 && (
+                        <span className="flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                          {note.tags.length} tags
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {remainingPinnedCount > 0 && (
+                  <div className="flex items-center justify-center">
+                    <div>
+                      <Button
+                        type="link"
+                        size="large"
+                        className="px-2 py-0 border-1 hover:text-blue-600 transition-colors duration-200"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate("/pinned");
+                        }}
+                      >
+                        +{remainingPinnedCount}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex items-center justify-center h-64">
@@ -150,6 +292,7 @@ const Home = () => {
                       index={index}
                       onUpdate={updateNote}
                       onDelete={deleteNote}
+                      onTogglePin={togglePinNote}
                       viewMode={viewMode}
                       isDetailView={false}
                     />
@@ -183,6 +326,7 @@ const Home = () => {
                         index={index}
                         onUpdate={updateNote}
                         onDelete={deleteNote}
+                        onTogglePin={togglePinNote}
                         viewMode={viewMode}
                         isDetailView={false}
                       />

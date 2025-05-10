@@ -25,10 +25,22 @@ const NoteContent = ({
           isDetailView ? "text-lg" : "text-base"
         }`}
         placeholder="Write your note here..."
-        rows={isDetailView ? 10 : viewMode === "grid" ? 3 : 1}
+        rows={
+          isDetailView
+            ? 10
+            : viewMode === "grid"
+            ? 3
+            : viewMode === "list"
+            ? 4
+            : 1
+        }
         style={{
           whiteSpace: "pre-wrap",
-          minHeight: isDetailView ? "200px" : "auto",
+          minHeight: isDetailView
+            ? "200px"
+            : viewMode === "list"
+            ? "80px"
+            : "auto",
           maxWidth: "100%",
           overflow: "hidden",
           wordBreak: "break-word",

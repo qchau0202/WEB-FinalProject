@@ -1,8 +1,8 @@
 export const mockUsers = [
   {
     id: 1,
-    email: "john@example.com",
-    display_name: "John Doe",
+    email: "user@gmail.com",
+    display_name: "Chou Lee",
     password: "123456", // In a real app, this would be hashed
     avatar: "https://i.pravatar.cc/150?img=1",
     preferences: {
@@ -13,6 +13,8 @@ export const mockUsers = [
     email_verified_at: "2024-03-15T10:00:00Z",
     created_at: "2024-03-15T10:00:00Z",
     updated_at: "2024-03-15T10:00:00Z",
+    isVerified: false,
+    isActive: true,
   },
   {
     id: 2,
@@ -28,6 +30,8 @@ export const mockUsers = [
     email_verified_at: "2024-03-14T15:30:00Z",
     created_at: "2024-03-14T15:30:00Z",
     updated_at: "2024-03-14T15:30:00Z",
+    isVerified: true,
+    isActive: true,
   },
   {
     id: 3,
@@ -43,5 +47,7 @@ export const mockUsers = [
     email_verified_at: "2024-03-13T09:15:00Z",
     created_at: "2024-03-13T09:15:00Z",
     updated_at: "2024-03-13T09:15:00Z",
+    isVerified: true,
+    isActive: false,
   },
 ];
