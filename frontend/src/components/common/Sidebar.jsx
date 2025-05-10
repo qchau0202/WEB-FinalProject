@@ -252,12 +252,11 @@ const Sidebar = ({ onSpaceSelect, selectedSpace, collapsed, setCollapsed }) => {
                 activate your account. <br />
                 <button
                   className="text-blue-600 hover:underline text-xs mt-1"
-                  onClick={() => {
-                    setShowVerification(false);
+                  onClick={() => {                  
                     navigate(`/profile/${currentUser.id}`);
                   }}
                 >
-                  Account overview
+                  Verify here
                 </button>
               </div>
               <button
