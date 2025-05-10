@@ -67,7 +67,7 @@ const ProfileContent = ({ user, activeTab }) => {
     switch (activeTab) {
       case "general":
         return (
-          <div className="bg-white p-6 rounded-md border border-gray-100">
+          <div>
             {!user.isVerified && (
               <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md flex items-center gap-3">
                 <ExclamationCircleFilled className="text-yellow-500" />
@@ -77,7 +77,7 @@ const ProfileContent = ({ user, activeTab }) => {
                     activate your account.
                   </p>
                   <button className="text-blue-600 hover:underline text-sm mt-1">
-                    Resend verification email
+                    Send verification via email
                   </button>
                 </div>
               </div>
@@ -193,8 +193,7 @@ const ProfileContent = ({ user, activeTab }) => {
           </div>
         );
       case "preferences":
-        return (
-          <div className="bg-white p-6 rounded-md border border-gray-100">
+        return (          
             <Form layout="vertical" className="space-y-6 max-w-md">
               <div>
                 <h3 className="text-lg font-medium text-gray-700 mb-4">
@@ -305,12 +304,10 @@ const ProfileContent = ({ user, activeTab }) => {
                   Reset to Default
                 </button>
               </div>
-            </Form>
-          </div>
+            </Form>          
         );
       case "change-password":
-        return (
-          <div className="bg-white p-6 rounded-md border border-gray-100">
+        return (          
             <Form layout="vertical" className="space-y-4 max-w-md">
               <Form.Item name="resetMethod" label="Reset Method">
                 <Select
@@ -399,12 +396,10 @@ const ProfileContent = ({ user, activeTab }) => {
                 </button>
               </Form.Item>
             </Form>
-          </div>
         );
       case "danger-zone":
-        return (
-          <div className="bg-white p-6 rounded-md border border-gray-100">
-            <div className="bg-red-50 p-4 rounded-md border border-red-200 max-w-md">
+        return (          
+            <div className="bg-red-50 p-4 rounded-md border border-red-200 max-w-lg">
               <h3 className="text-lg font-medium text-red-700 mb-3">
                 Delete Account
               </h3>
@@ -436,8 +431,7 @@ const ProfileContent = ({ user, activeTab }) => {
                   </button>
                 </Form.Item>
               </Form>
-            </div>
-          </div>
+            </div>          
         );
       default:
         return null;
