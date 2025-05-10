@@ -2,7 +2,7 @@ const spaces = [
   { id: 1, name: "Work", color: "bg-red-500" },
   { id: 2, name: "Study", color: "bg-blue-500" },
   { id: 3, name: "Personal", color: "bg-green-500" },
-  { id: 4, name: "Ideas", color: "bg-yellow-500" },
+  { id: 4, name: "Ideas", color: "bg-yellow-500" },  
 ];
 
 const defaultNotes = [

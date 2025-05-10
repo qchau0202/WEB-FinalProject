@@ -67,7 +67,7 @@ const Note = ({ note, onUpdate, onDelete, viewMode, isDetailView = false }) => {
     <div
       className={`bg-white rounded-lg shadow-sm border border-gray-100 transition-all ${
         isDetailView
-          ? "max-w-5xl mx-auto"
+          ? "max-w-5xl mx-auto w-full"
           : viewMode === "grid"
           ? "w-full hover:shadow-md"
           : "w-full hover:shadow-md"
@@ -81,6 +81,8 @@ const Note = ({ note, onUpdate, onDelete, viewMode, isDetailView = false }) => {
           ? "220px"
           : "120px",
         height: isDetailView ? "auto" : "auto",
+        maxWidth: "100%",
+        overflow: "hidden",
       }}
     >
       <NoteHeader

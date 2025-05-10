@@ -36,24 +36,12 @@ const NoteAttachments = ({ files, isDetailView, note }) => {
         </div>
       )}
       {(isDetailView || files.length > 0) && (
-        <div className="px-5 py-2 border-t border-gray-100 bg-gray-50 rounded-b-lg">
+        <div className="p-5 border-t border-gray-100 bg-gray-50 rounded-b-lg">
           <div className="text-sm text-gray-500">
             {files.length} file{files.length !== 1 ? "s" : ""} attached
           </div>
         </div>
-      )}
-      {isDetailView && (
-        <div className="border-t border-gray-100 p-6 bg-gray-50 rounded-b-lg">
-          <div className="flex items-center text-base text-gray-500">
-            <div className="flex items-center mr-4">
-              <span>Created: {note.createdAt}</span>
-            </div>
-            <div className="flex items-center">
-              <span>Updated: {note.updatedAt}</span>
-            </div>
-          </div>
-        </div>
-      )}
+      )}      
     </>
   );
 };

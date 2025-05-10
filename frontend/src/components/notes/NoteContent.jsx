@@ -29,20 +29,32 @@ const NoteContent = ({
         style={{
           whiteSpace: "pre-wrap",
           minHeight: isDetailView ? "200px" : "auto",
+          maxWidth: "100%",
+          overflow: "hidden",
+          wordBreak: "break-word",
         }}
         onClick={(e) => e.stopPropagation()}
       />
       <div
-        className={`flex justify-between items-center px-5 py-3 border-t border-gray-100 bg-gray-50 rounded-b-lg ${
+        className={`flex items-center px-5 py-3 border-t border-gray-100 bg-gray-50 rounded-b-lg ${
           isDetailView ? "p-6" : ""
-        }`}
+        } overflow-hidden`}
       >
-        <NoteTags
-          tags={tags}
-          onAddTag={onAddTag}
-          onClick={(e) => e.stopPropagation()}
-        />
-        <div className="flex gap-3">
+        <div
+          className="flex items-center"
+          style={
+            isDetailView ? {} : { maxWidth: 220, minWidth: 120, flexShrink: 0 }
+          }
+        >
+          <NoteTags
+            tags={tags}
+            onAddTag={onAddTag}
+            onClick={(e) => e.stopPropagation()}
+            isDetailView={isDetailView}
+          />
+        </div>
+        <div className="flex-grow" />
+        <div className="flex-shrink-0 flex gap-2 ml-2">
           <Tooltip title="Add image">
             <label>
               <div className="p-1 rounded-full hover:bg-gray-200 cursor-pointer">

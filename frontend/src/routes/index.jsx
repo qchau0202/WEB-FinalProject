@@ -5,6 +5,7 @@ import NoteDetail from "../pages/NoteDetail";
 import NotFound from "../pages/NotFound";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
+import Profile from "../pages/Profile";
 
 const router = createBrowserRouter([
   {
@@ -18,6 +19,10 @@ const router = createBrowserRouter([
         path: "/note/:id",
         element: <NoteDetail />,
       },
+      {
+        path: "profile/:id",
+        element: <Profile />,
+      }
     ],
   },
   {

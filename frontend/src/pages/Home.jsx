@@ -65,23 +65,25 @@ const Home = () => {
 
   return (
     <div className="h-full overflow-y-auto bg-gray-50">
-      <div className="p-6 md:p-8">
+      <div className="p-4 md:p-6 lg:p-8 max-w-[2000px] mx-auto">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-          <h1 className="text-3xl font-bold text-gray-800">{getSpaceName()}</h1>
-          <div className="flex flex-col md:flex-row gap-3">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800 truncate">
+            {getSpaceName()}
+          </h1>
+          <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
             <Input
               prefix={<SearchOutlined className="text-gray-400 text-lg" />}
               placeholder="Search notes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="md:w-64 text-base"
+              className="w-full md:w-64 text-base"
             />
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full md:w-auto">
               <Select
                 defaultValue="manual"
                 onChange={(value) => setSortBy(value)}
                 suffixIcon={<SortAscendingOutlined className="text-lg" />}
-                className="w-32 text-base"
+                className="w-full md:w-32 text-base"
               >
                 <Option value="manual">Manual</Option>
                 <Option value="newest">Newest</Option>
@@ -92,18 +94,24 @@ const Home = () => {
                 <Button
                   icon={<AppstoreOutlined />}
                   onClick={() => setViewMode("grid")}
-                  type="text"
-                  className={`text-lg ${
-                    viewMode === "grid" ? "bg-blue-50 text-blue-500" : ""
-                  }`}
+                  type={viewMode === "grid" ? "primary" : "text"}
+                  style={{
+                    backgroundColor: viewMode === "grid" ? "#e6f7ff" : "",
+                    borderColor: viewMode === "grid" ? "#e6f7ff" : "",
+                    color: viewMode === "grid" ? "#1890ff" : "",
+                  }}
+                  className="text-lg"
                 />
                 <Button
                   icon={<UnorderedListOutlined />}
                   onClick={() => setViewMode("list")}
-                  type="text"
-                  className={`text-lg ${
-                    viewMode === "list" ? "bg-blue-50 text-blue-500" : ""
-                  }`}
+                  type={viewMode === "list" ? "primary" : "text"}
+                  style={{
+                    backgroundColor: viewMode === "list" ? "#e6f7ff" : "",
+                    borderColor: viewMode === "list" ? "#e6f7ff" : "",
+                    color: viewMode === "list" ? "#1890ff" : "",
+                  }}
+                  className="text-lg"
                 />
               </div>
             </div>

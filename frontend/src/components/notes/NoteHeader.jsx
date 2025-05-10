@@ -91,6 +91,12 @@ const NoteHeader = ({
             }`}
             placeholder="Title"
             onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: "100%",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
           />
           <div className="text-sm text-gray-400 mt-1">
             {note.updatedAt

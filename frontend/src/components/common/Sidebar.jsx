@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button, Tooltip, Dropdown, Menu } from "antd";
 import { spaces } from "../../mock-data/notes";
 import { useNavigate } from "react-router-dom";
@@ -13,20 +13,45 @@ import {
   MenuUnfoldOutlined,
   MenuFoldOutlined,
   LogoutOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
 
 const Sidebar = ({ onSpaceSelect, selectedSpace, collapsed, setCollapsed }) => {
   const navigate = useNavigate();
   const [spacesOpen, setSpacesOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+  const [localCollapsed, setLocalCollapsed] = useState(false);
 
   // Get current user from localStorage
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const isCollapsed = collapsed !== undefined ? collapsed : useState(false)[0];
+  const isCollapsed = collapsed !== undefined ? collapsed : localCollapsed;
+
+  // Add responsive behavior
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile && !isCollapsed) {
+        setCollapsed?.(true);
+      }
+    };
+
+    // Initial check
+    handleResize();
+
+    // Add event listener
+    window.addEventListener("resize", handleResize);
+
+    // Cleanup
+    return () => window.removeEventListener("resize", handleResize);
+  }, [isCollapsed, setCollapsed]);
+
   const toggleCollapsed = () => {
     if (setCollapsed) {
       setCollapsed(!isCollapsed);
+    } else {
+      setLocalCollapsed(!localCollapsed);
     }
   };
 
@@ -38,6 +63,13 @@ const Sidebar = ({ onSpaceSelect, selectedSpace, collapsed, setCollapsed }) => {
 
   const settingsMenu = (
     <Menu>
+      <Menu.Item
+        key="profile"
+        onClick={() => navigate(`/profile/${currentUser.id}`)}
+        icon={<UserOutlined />}
+      >
+        Profile
+      </Menu.Item>
       <Menu.Item key="logout" onClick={handleLogout} icon={<LogoutOutlined />}>
         Logout
       </Menu.Item>
@@ -46,9 +78,9 @@ const Sidebar = ({ onSpaceSelect, selectedSpace, collapsed, setCollapsed }) => {
 
   return (
     <div
-      className={`h-screen bg-white flex flex-col border-r border-gray-200 transition-all overflow-y-auto ${
+      className={`h-screen bg-white flex flex-col border-r border-gray-200 transition-all overflow-y-auto fixed md:relative z-50 ${
         isCollapsed ? "w-16" : "w-64"
-      }`}
+      } ${isMobile && !isCollapsed ? "shadow-lg" : ""}`}
     >
       {/* Header */}
       <div
@@ -57,7 +89,9 @@ const Sidebar = ({ onSpaceSelect, selectedSpace, collapsed, setCollapsed }) => {
         } border-b border-gray-100`}
       >
         {!isCollapsed && (
-          <h1 className="text-2xl font-bold text-blue-600">Notelit</h1>
+          <h1 className="text-xl md:text-2xl font-bold text-blue-600">
+            Notelit
+          </h1>
         )}
         <Button
           type="text"
@@ -92,6 +126,9 @@ const Sidebar = ({ onSpaceSelect, selectedSpace, collapsed, setCollapsed }) => {
                 onClick={() => {
                   onSpaceSelect(null);
                   navigate("/");
+                  if (isMobile) {
+                    setCollapsed?.(true);
+                  }
                 }}
               >
                 <FileTextOutlined />
@@ -102,7 +139,12 @@ const Sidebar = ({ onSpaceSelect, selectedSpace, collapsed, setCollapsed }) => {
             <Tooltip title={isCollapsed ? "Favorites" : ""} placement="right">
               <div
                 className="flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer hover:bg-gray-100 text-gray-700"
-                onClick={() => navigate("/favorites")}
+                onClick={() => {
+                  navigate("/favorites");
+                  if (isMobile) {
+                    setCollapsed?.(true);
+                  }
+                }}
               >
                 <StarOutlined />
                 {!isCollapsed && <span>Favorites</span>}
@@ -198,11 +240,19 @@ const Sidebar = ({ onSpaceSelect, selectedSpace, collapsed, setCollapsed }) => {
           </Tooltip>
         ) : (
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div
+              className="flex items-center gap-2 cursor-pointer"
+              onClick={() => {
+                navigate(`/profile/${currentUser.id}`);
+                if (isMobile) {
+                  setCollapsed?.(true);
+                }
+              }}
+            >
               <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium text-xs">
                 {currentUser?.display_name?.[0]?.toUpperCase() || "U"}
               </div>
-              <span className="text-lg font-medium">
+              <span className="text-base md:text-lg font-medium truncate max-w-[120px]">
                 {currentUser?.display_name || "User"}
               </span>
             </div>
