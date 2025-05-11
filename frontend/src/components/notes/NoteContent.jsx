@@ -1,18 +1,19 @@
-import NoteTags from "./NoteTags";
+import NoteLabels from "./NoteLabels";
 import { PictureOutlined, FileOutlined } from "@ant-design/icons";
 import { Tooltip } from "antd";
+import { useNote } from "../../contexts/NotesContext";
 
-const NoteContent = ({
-  content,
-  setContent,
-  tags,
-  onAddTag,
-  isDetailView,
-  viewMode,
-  handleInput,
-  title,
-  handleFileUpload,
-}) => {
+const NoteContent = () => {
+  const {
+    content,
+    setContent,
+    isDetailView,
+    viewMode,
+    handleInput,
+    title,
+    handleFileUpload,
+  } = useNote();
+
   return (
     <div className={`flex flex-col ${isDetailView ? "flex-1" : ""}`}>
       <textarea
@@ -58,12 +59,7 @@ const NoteContent = ({
             isDetailView ? {} : { maxWidth: 220, minWidth: 120, flexShrink: 0 }
           }
         >
-          <NoteTags
-            tags={tags}
-            onAddTag={onAddTag}
-            onClick={(e) => e.stopPropagation()}
-            isDetailView={isDetailView}
-          />
+          <NoteLabels />
         </div>
         <div className="flex-grow" />
         <div className="flex-shrink-0 flex gap-2 ml-2">

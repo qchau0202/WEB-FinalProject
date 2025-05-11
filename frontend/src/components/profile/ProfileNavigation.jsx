@@ -1,9 +1,4 @@
-import {
-  UserOutlined,
-  SettingOutlined,
-  KeyOutlined,
-  WarningOutlined,
-} from "@ant-design/icons";
+import { UserOutlined, SettingOutlined, KeyOutlined } from "@ant-design/icons";
 
 const ProfileNavigation = ({ activeTab, setActiveTab }) => {
   return (
@@ -52,17 +47,6 @@ const ProfileNavigation = ({ activeTab, setActiveTab }) => {
             >
               <KeyOutlined />
               <span>Change Password</span>
-            </div>
-            <div
-              className={`flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer ${
-                activeTab === "danger-zone"
-                  ? "bg-blue-50 text-blue-600"
-                  : "hover:bg-gray-100 text-gray-700"
-              }`}
-              onClick={() => setActiveTab("danger-zone")}
-            >
-              <WarningOutlined />
-              <span>Danger Zone</span>
             </div>
           </div>
         </div>

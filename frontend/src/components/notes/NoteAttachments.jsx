@@ -3,8 +3,11 @@ import {
   PictureOutlined,
   PaperClipOutlined,
 } from "@ant-design/icons";
+import { useNote } from "../../contexts/NotesContext";
 
-const NoteAttachments = ({ files, isDetailView, note }) => {
+const NoteAttachments = () => {
+  const { files, isDetailView } = useNote();
+
   return (
     <>
       {isDetailView && files.length > 0 && (
@@ -36,12 +39,12 @@ const NoteAttachments = ({ files, isDetailView, note }) => {
         </div>
       )}
       {(isDetailView || files.length > 0) && (
-        <div className="p-5 border-t border-gray-100 bg-gray-50 rounded-b-lg">
+        <div className="p-4 border-t border-gray-100 bg-gray-50 rounded-b-lg">
           <div className="text-sm text-gray-500">
             {files.length} file{files.length !== 1 ? "s" : ""} attached
           </div>
         </div>
-      )}      
+      )}
     </>
   );
 };

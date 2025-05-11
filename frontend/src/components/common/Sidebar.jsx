@@ -1,13 +1,10 @@
 import { useState, useEffect } from "react";
-import { Button, Tooltip, Dropdown, Menu } from "antd";
-import { spaces } from "../../mock-data/notes";
-import { Link, useNavigate } from "react-router-dom";
+import { Button, Tooltip, Dropdown } from "antd";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
+import { useLabel } from "../../contexts/LabelsContext";
+import { useAuth } from "../../contexts/AuthContext";
 import {
-  DownOutlined,
-  RightOutlined,
-  FileTextOutlined,
-  PlusOutlined,
   SettingOutlined,
   MenuUnfoldOutlined,
   MenuFoldOutlined,
@@ -16,25 +13,23 @@ import {
   PushpinOutlined,
   ExclamationCircleFilled,
   CloseOutlined,
+  HomeOutlined,
 } from "@ant-design/icons";
+import LabelManagement from "../labels/LabelManagement";
 
-const Sidebar = ({ onSpaceSelect, selectedSpace, collapsed, setCollapsed }) => {
+const Sidebar = ({ collapsed, setCollapsed }) => {
   const navigate = useNavigate();
-  const [spacesOpen, setSpacesOpen] = useState(true);
+  const location = useLocation();
+  const { currentUser, logout, isAuthenticated } = useAuth();
+  const { selectedLabel, setSelectedLabel } = useLabel();
   const [isMobile, setIsMobile] = useState(false);
   const [localCollapsed, setLocalCollapsed] = useState(false);
   const [showVerification, setShowVerification] = useState(() => {
-    // Only show if user is not verified
-    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
     return currentUser && currentUser.isVerified === false;
   });
 
-  // Get current user from localStorage
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-
   const isCollapsed = collapsed !== undefined ? collapsed : localCollapsed;
 
-  // Add responsive behavior
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth < 768;
@@ -44,15 +39,16 @@ const Sidebar = ({ onSpaceSelect, selectedSpace, collapsed, setCollapsed }) => {
       }
     };
 
-    // Initial check
     handleResize();
-
-    // Add event listener
     window.addEventListener("resize", handleResize);
-
-    // Cleanup
     return () => window.removeEventListener("resize", handleResize);
   }, [isCollapsed, setCollapsed]);
+
+  useEffect(() => {
+    if (currentUser) {
+      setShowVerification(currentUser.isVerified === false);
+    }
+  }, [currentUser]);
 
   const toggleCollapsed = () => {
     if (setCollapsed) {
@@ -63,25 +59,42 @@ const Sidebar = ({ onSpaceSelect, selectedSpace, collapsed, setCollapsed }) => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("currentUser");
+    logout();
     toast.success("Logged out successfully");
     navigate("/login");
   };
 
-  const settingsMenu = (
-    <Menu>
-      <Menu.Item
-        key="profile"
-        onClick={() => navigate(`/profile/${currentUser.id}`)}
-        icon={<UserOutlined />}
-      >
-        Profile
-      </Menu.Item>
-      <Menu.Item key="logout" onClick={handleLogout} icon={<LogoutOutlined />}>
-        Logout
-      </Menu.Item>
-    </Menu>
-  );
+  const handleProfileClick = () => {
+    if (currentUser) {
+      navigate(`/profile/${currentUser.id}`);
+      if (isMobile) {
+        setCollapsed?.(true);
+      }
+    } else {
+      toast.error("Please login to view your profile");
+      navigate("/login");
+    }
+  };
+
+  const settingsMenu = {
+    items: [
+      {
+        key: "profile",
+        label: "Profile",
+        icon: <UserOutlined />,
+        onClick: handleProfileClick,
+      },
+      {
+        key: "logout",
+        label: "Logout",
+        icon: <LogoutOutlined />,
+        onClick: handleLogout,
+      },
+    ],
+  };
+
+  const isHomeActive = location.pathname === "/" && !selectedLabel;
+  const isSharedActive = location.pathname === "/shared" && !selectedLabel;
 
   return (
     <div
@@ -125,155 +138,111 @@ const Sidebar = ({ onSpaceSelect, selectedSpace, collapsed, setCollapsed }) => {
               isCollapsed ? "flex-col items-center" : "flex-col"
             } gap-1`}
           >
-            <Tooltip title={isCollapsed ? "All Notes" : ""} placement="right">
+            <Tooltip title={isCollapsed ? "Home" : ""} placement="right">
               <div
                 className={`flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer ${
-                  !selectedSpace && selectedSpace !== "pinned"
+                  isHomeActive
                     ? "bg-blue-50 text-blue-600"
                     : "hover:bg-gray-100 text-gray-700"
                 }`}
                 onClick={() => {
-                  onSpaceSelect(null);
+                  setSelectedLabel(null);
                   navigate("/");
                   if (isMobile) {
                     setCollapsed?.(true);
                   }
                 }}
               >
-                <FileTextOutlined />
-                {!isCollapsed && <span>All Notes</span>}
+                <HomeOutlined />
+                {!isCollapsed && <span>Home</span>}
               </div>
             </Tooltip>
 
-            <Tooltip title={isCollapsed ? "Pinned" : ""} placement="right">
+            <Tooltip title={isCollapsed ? "Shared" : ""} placement="right">
               <div
                 className={`flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer ${
-                  selectedSpace === "pinned"
+                  isSharedActive
                     ? "bg-blue-50 text-blue-600"
                     : "hover:bg-gray-100 text-gray-700"
                 }`}
                 onClick={() => {
-                  onSpaceSelect("pinned");
-                  navigate("/pinned");
+                  setSelectedLabel(null);
+                  navigate("/shared");
                   if (isMobile) {
                     setCollapsed?.(true);
                   }
                 }}
               >
                 <PushpinOutlined />
-                {!isCollapsed && <span>Pinned</span>}
+                {!isCollapsed && <span>Shared Notes</span>}
               </div>
             </Tooltip>
           </div>
         </div>
 
-        {/* Spaces */}
-        <div className="px-3">
-          {!isCollapsed && (
-            <div
-              className="flex items-center justify-between px-2 mb-2 cursor-pointer"
-              onClick={() => setSpacesOpen(!spacesOpen)}
-            >
-              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Labels
-              </h2>
-              {spacesOpen ? (
-                <DownOutlined className="text-gray-400 text-xs" />
-              ) : (
-                <RightOutlined className="text-gray-400 text-xs" />
-              )}
-            </div>
-          )}
-
-          {(spacesOpen || isCollapsed) && (
-            <div
-              className={`flex ${
-                isCollapsed ? "flex-col items-center" : "flex-col"
-              } gap-1`}
-            >
-              {spaces.map((space) => (
-                <Tooltip
-                  key={space.id}
-                  title={isCollapsed ? space.name : ""}
-                  placement="right"
-                >
-                  <div
-                    className={`flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer ${
-                      selectedSpace === space.id
-                        ? "bg-blue-50 text-blue-600"
-                        : "hover:bg-gray-100 text-gray-700"
-                    }`}
-                    onClick={() => {
-                      onSpaceSelect(space.id);
-                      navigate("/");
-                    }}
-                  >
-                    <div
-                      className={`w-3 h-3 rounded-full ${space.color}`}
-                    ></div>
-                    {!isCollapsed && (
-                      <span className="truncate">{space.name}</span>
-                    )}
-                  </div>
-                </Tooltip>
-              ))}
-
-              {!isCollapsed && (
-                <div
-                  className="flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer hover:bg-gray-100 text-gray-500 mt-1"
-                  onClick={() => {
-                    /* Handle create space */
-                  }}
-                >
-                  <PlusOutlined className="text-xs" />
-                  <span>New Space</span>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+        {/* Labels */}
+        <LabelManagement
+          isCollapsed={isCollapsed}
+          isMobile={isMobile}
+          setCollapsed={setCollapsed}
+          navigate={navigate}
+        />
       </div>
 
       {/* Footer */}
-      <div
-        className={`p-3 border-t border-gray-100 ${
-          isCollapsed ? "flex justify-center" : ""
-        }`}
-      >
-        {/* Verification warning above user info in footer */}
-        {!isCollapsed &&
-          showVerification &&
-          currentUser &&
-          currentUser.isVerified === false && (
-            <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md flex items-start gap-3 relative">
-              <ExclamationCircleFilled className="text-yellow-500 text-lg mt-0.5" />
-              <div className="flex-1 min-w-0 text-xs text-yellow-800">
-                Your account is not verified. Please check your email to
-                activate your account. <br />
-                <button
-                  className="text-blue-600 hover:underline text-xs mt-1"
-                  onClick={() => {
-                    setShowVerification(false);
-                    navigate(`/profile/${currentUser.id}`);
-                  }}
-                >
-                  Account overview
-                </button>
-              </div>
+      <div className={`p-3 ${isCollapsed ? "flex justify-center" : ""}`}>
+        {/* Login reminder or verification warning */}
+        {!isCollapsed && !isAuthenticated() && (
+          <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-md flex items-start gap-3 relative">
+            <ExclamationCircleFilled className="text-blue-500 text-lg mt-0.5" />
+            <div className="flex-1 min-w-0 text-xs text-blue-800">
+              Please login to access all features. <br />
               <button
-                className="absolute top-2 right-2 text-yellow-500 hover:text-yellow-700 text-xs"
-                onClick={() => setShowVerification(false)}
-                aria-label="Close notification"
+                className="text-blue-600 hover:underline text-xs mt-1"
+                onClick={() => navigate("/login")}
               >
-                <CloseOutlined />
+                Login now
               </button>
             </div>
-          )}
+            <button
+              className="absolute top-2 right-2 text-blue-500 hover:text-blue-700 text-xs"
+              onClick={() => setShowVerification(false)}
+              aria-label="Close notification"
+            >
+              <CloseOutlined />
+            </button>
+          </div>
+        )}
+
+        {/* Verification warning */}
+        {!isCollapsed && showVerification && currentUser && (
+          <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md flex items-start gap-3 relative">
+            <ExclamationCircleFilled className="text-yellow-500 text-lg mt-0.5" />
+            <div className="flex-1 min-w-0 text-xs text-yellow-800">
+              Your account is not verified. Please check your email to activate
+              your account. <br />
+              <button
+                className="text-blue-600 hover:underline text-xs mt-1"
+                onClick={handleProfileClick}
+              >
+                Account overview
+              </button>
+            </div>
+            <button
+              className="absolute top-2 right-2 text-yellow-500 hover:text-yellow-700 text-xs"
+              onClick={() => setShowVerification(false)}
+              aria-label="Close notification"
+            >
+              <CloseOutlined />
+            </button>
+          </div>
+        )}
+
         {/* User info */}
         {isCollapsed ? (
           <Tooltip title="Settings" placement="right">
             <Dropdown
-              overlay={settingsMenu}
+              menu={settingsMenu}
               trigger={["click"]}
               placement="topRight"
             >
@@ -284,29 +253,38 @@ const Sidebar = ({ onSpaceSelect, selectedSpace, collapsed, setCollapsed }) => {
           </Tooltip>
         ) : (
           <div className="flex items-center justify-between">
-            <div
-              className="flex items-center gap-2 cursor-pointer"
-              onClick={() => {
-                navigate(`/profile/${currentUser.id}`);
-                if (isMobile) {
-                  setCollapsed?.(true);
-                }
-              }}
-            >
-              <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium text-xs">
-                {currentUser?.display_name?.[0]?.toUpperCase() || "U"}
+            {currentUser ? (
+              <>
+                <div
+                  className="flex items-center gap-2 cursor-pointer"
+                  onClick={handleProfileClick}
+                >
+                  <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium text-xs">
+                    {currentUser.display_name?.[0]?.toUpperCase() || "U"}
+                  </div>
+                  <span className="text-base md:text-lg font-medium truncate max-w-[120px]">
+                    {currentUser.display_name || "User"}
+                  </span>
+                </div>
+                <Dropdown
+                  menu={settingsMenu}
+                  trigger={["click"]}
+                  placement="topRight"
+                >
+                  <SettingOutlined className="text-gray-500 cursor-pointer" />
+                </Dropdown>
+              </>
+            ) : (
+              <div className="flex items-center gap-2 w-full">
+                <Button
+                  type="primary"
+                  onClick={() => navigate("/login")}
+                  className="w-full"
+                >
+                  Login
+                </Button>
               </div>
-              <span className="text-base md:text-lg font-medium truncate max-w-[120px]">
-                {currentUser?.display_name || "User"}
-              </span>
-            </div>
-            <Dropdown
-              overlay={settingsMenu}
-              trigger={["click"]}
-              placement="topRight"
-            >
-              <SettingOutlined className="text-gray-500 cursor-pointer" />
-            </Dropdown>
+            )}
           </div>
         )}
       </div>

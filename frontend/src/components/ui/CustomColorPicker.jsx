@@ -48,6 +48,7 @@ const CustomColorPicker = ({
                 colors: ["#3b82f6", "#10b981", "#ef4444"],
               },
             ]}
+            placement="topLeft"
           />
           <div className="mt-3 flex gap-2 justify-end">
             <button

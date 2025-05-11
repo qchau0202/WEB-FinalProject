@@ -1,128 +1,163 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { message } from "antd";
+import { NoteProvider } from "../../contexts/NotesContext";
 import NoteHeader from "./NoteHeader";
 import NoteContent from "./NoteContent";
 import NoteAttachments from "./NoteAttachments";
 import NoteDeleteModal from "./NoteDeleteModal";
+import { useNote } from "../../contexts/NotesContext";
+import NoteLockModal from "./NoteLockModal";
+import { LockOutlined, ArrowLeftOutlined } from "@ant-design/icons";
+import { Button } from "antd";
+import { useNavigate } from "react-router-dom";
 
-const Note = ({ note, onUpdate, onDelete, viewMode, isDetailView = false }) => {
-  const [title, setTitle] = useState(note.title);
-  const [content, setContent] = useState(note.content);
-  const [tags, setTags] = useState(note.tags);
-  const [files, setFiles] = useState(note.files);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+const LockedNoteView = ({ note, isDetailView, viewMode }) => {
+  const { setShowLockModal } = useNote();
   const navigate = useNavigate();
 
-  const handleAddTag = (newTag) => {
-    const updatedTags = [...tags, newTag];
-    setTags(updatedTags);
-    onUpdate({ ...note, tags: updatedTags });
+  const handleUnlockClick = (e) => {
+    e.stopPropagation();
+    setShowLockModal(true);
   };
 
-  const handlePin = (noteId) => {
-    const updatedNote = {
-      ...note,
-      isPinned: !note.isPinned,
-    };
-    onUpdate(updatedNote);
-    message.success(updatedNote.isPinned ? "Note pinned" : "Note unpinned");
+  const handleBackClick = (e) => {
+    e.stopPropagation();
+    navigate("/");
   };
 
-  const handleDrop = (e) => {
-    e.preventDefault();
-    const droppedFiles = Array.from(e.dataTransfer.files);
-    const validFiles = droppedFiles.filter(
-      (file) => file.size <= 5 * 1024 * 1024
+  if (isDetailView) {
+    return (
+      <div className="flex items-center justify-center ">
+        <div className="relative p-10 w-full flex flex-col items-center">
+          <Button
+            icon={<ArrowLeftOutlined />}
+            type="text"
+            onClick={handleBackClick}
+            className="!absolute !top-4 !left-4"
+            style={{ fontWeight: 500 }}
+          >
+            Back to Home
+          </Button>
+          <h3 className="text-3xl font-semibold text-gray-700 mb-4 mt-2 text-center">
+            {note.title || "Untitled"}
+          </h3>
+          <p className="text-base text-gray-500 mb-6 text-center">
+            This note is locked
+          </p>
+          <Button
+            icon={<LockOutlined />}
+            type="primary"
+            size="large"
+            onClick={handleUnlockClick}
+          >
+            Unlock Note
+          </Button>
+        </div>
+      </div>
     );
-    const newFiles = validFiles.map((file) => ({
-      name: file.name,
-      size: file.size,
-    }));
-    setFiles([...files, ...newFiles]);
-    onUpdate({ ...note, files: [...files, ...newFiles] });
+  }
+
+  if (viewMode === "list") {
+    return (
+      <div className="flex-1 flex flex-row items-center justify-between p-4">
+        <div className="flex items-center">
+          <h3 className="text-lg font-medium text-gray-700">
+            {note.title || "Untitled"}
+          </h3>
+          <span className="ml-4 text-sm text-gray-500">(Locked)</span>
+        </div>
+        <Button
+          icon={<LockOutlined />}
+          type="dashed"
+          onClick={handleUnlockClick}
+        >
+          Unlock
+        </Button>
+      </div>
+    );
+  }
+
+  // Grid view (default)
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center">
+      <h3 className="text-2xl font-medium text-gray-700 mb-1">
+        {note.title || "Untitled"}
+      </h3>
+      <p className="text-sm text-gray-500 py-2">This note is locked</p>
+      <Button icon={<LockOutlined />} type="dashed" onClick={handleUnlockClick}>
+        Unlock Note
+      </Button>
+    </div>
+  );
+};
+
+const Note = ({
+  note,
+  onUpdate,
+  onDelete,
+  onLock,
+  viewMode,
+  isDetailView = false,
+}) => {
+  const noteContext = useNote();
+
+  const handleLock = (noteId, password) => {
+    onLock(noteId, password);
   };
 
-  const handleInput = (newTitle, newContent) => {
-    const updatedNote = {
-      ...note,
-      title: newTitle,
-      content: newContent,
-      updatedAt: new Date().toISOString().split("T")[0],
-    };
-    onUpdate(updatedNote);
-  };
-
-  const handleDelete = () => {
-    onDelete(note.id);
-    setConfirmDelete(false);
-    message.success("Note deleted successfully");
-    if (isDetailView) {
-      navigate("/");
-    }
-  };
-
-  const handleFileUpload = (file) => {
-    if (file && file.size <= 5 * 1024 * 1024) {
-      setFiles([...files, { name: file.name, size: file.size }]);
-      onUpdate({
-        ...note,
-        files: [...files, { name: file.name, size: file.size }],
-      });
+  const handleNoteClick = (e) => {
+    if (note.lockStatus?.isLocked) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
     }
   };
 
   return (
-    <div
-      className={`bg-white rounded-lg shadow-sm border border-gray-100 transition-all ${
-        isDetailView
-          ? "max-w-5xl mx-auto w-full"
-          : viewMode === "grid"
-          ? "w-full hover:shadow-md"
-          : "w-full hover:shadow-md"
-      } flex flex-col relative`}
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={handleDrop}
-      style={{
-        minHeight: isDetailView
-          ? "auto"
-          : viewMode === "grid"
-          ? "220px"
-          : undefined,
-        height: isDetailView ? "auto" : undefined,
-        maxWidth: "100%",
-      }}
+    <NoteProvider
+      note={note}
+      onUpdate={onUpdate}
+      onDelete={onDelete}
+      onLock={handleLock}
+      viewMode={viewMode}
+      isDetailView={isDetailView}
     >
-      <NoteHeader
-        title={title}
-        setTitle={setTitle}
-        note={note}
-        isDetailView={isDetailView}
-        viewMode={viewMode}
-        navigate={navigate}
-        setConfirmDelete={setConfirmDelete}
-        handleInput={handleInput}
-        content={content}
-        onPin={handlePin}
-      />
-      <NoteContent
-        content={content}
-        setContent={setContent}
-        tags={tags}
-        onAddTag={handleAddTag}
-        isDetailView={isDetailView}
-        viewMode={viewMode}
-        handleInput={handleInput}
-        title={title}
-        handleFileUpload={handleFileUpload}
-      />
-      <NoteAttachments files={files} isDetailView={isDetailView} note={note} />
-      <NoteDeleteModal
-        confirmDelete={confirmDelete}
-        handleDelete={handleDelete}
-        setConfirmDelete={setConfirmDelete}
-      />
-    </div>
+      <div
+        className={`bg-white rounded-lg shadow-sm border border-gray-100 transition-all relative ${
+          isDetailView
+            ? "max-w-5xl mx-auto w-full"
+            : viewMode === "grid"
+            ? "w-full hover:shadow-md"
+            : "w-full hover:shadow-md"
+        } flex flex-col`}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => noteContext?.handleDrop(e)}
+        onClick={handleNoteClick}
+        style={{
+          minHeight: isDetailView
+            ? "auto"
+            : viewMode === "grid"
+            ? "220px"
+            : undefined,
+          height: isDetailView ? "auto" : undefined,
+          maxWidth: "100%",
+        }}
+      >
+        {note.lockStatus?.isLocked ? (
+          <LockedNoteView
+            note={note}
+            isDetailView={isDetailView}
+            viewMode={viewMode}
+          />
+        ) : (
+          <>
+            <NoteHeader />
+            <NoteContent />
+            <NoteAttachments />
+          </>
+        )}
+        <NoteDeleteModal />
+        <NoteLockModal />
+      </div>
+    </NoteProvider>
   );
 };
 

@@ -1,6 +1,9 @@
 import { Button } from "antd";
+import { useNote } from "../../contexts/NotesContext";
 
-const NoteDeleteModal = ({ confirmDelete, handleDelete, setConfirmDelete }) => {
+const NoteDeleteModal = () => {
+  const { confirmDelete, handleDelete, setConfirmDelete } = useNote();
+
   if (!confirmDelete) return null;
 
   return (

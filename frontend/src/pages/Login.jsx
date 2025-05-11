@@ -3,10 +3,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { mockUsers } from "../mock-data/users";
 import toast from "react-hot-toast";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
-import background from "/bg.jpg"
+import { useAuth } from "../contexts/AuthContext";
+import background from "/bg.jpg";
 
 const Login = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -41,21 +43,18 @@ const Login = () => {
       return;
     }
 
-    // Store user data in localStorage (in a real app, you'd use a more secure method)
-    localStorage.setItem(
-      "currentUser",
-      JSON.stringify({
-        id: user.id,
-        email: user.email,
-        display_name: user.display_name,
-        avatar: user.avatar,
-        preferences: user.preferences,
-        email_verified_at: user.email_verified_at,
-        created_at: user.created_at,        
-        isVerified: user.isVerified,
-        isActive: user.isActive,
-      })
-    );
+    // Login using auth context
+    login({
+      id: user.id,
+      email: user.email,
+      display_name: user.display_name,
+      avatar: user.avatar,
+      preferences: user.preferences,
+      email_verified_at: user.email_verified_at,
+      created_at: user.created_at,
+      isVerified: user.isVerified,
+      isActive: user.isActive,
+    });
 
     toast.success("Logged in successfully!");
     // Navigate to home page
@@ -63,8 +62,14 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8"
-    style={{backgroundImage: `url(${background})`, backgroundSize: "cover", backgroundPosition: "center"}}>
+    <div
+      className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8"
+      style={{
+        backgroundImage: `url(${background})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+    >
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-sm border border-gray-100">
         <div>
           <h2 className="mt-6 text-center text-3xl font-bold text-gray-800">

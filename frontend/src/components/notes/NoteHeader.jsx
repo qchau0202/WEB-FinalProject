@@ -1,46 +1,95 @@
 import {
   ArrowLeftOutlined,
-  ShareAltOutlined,
+  PushpinOutlined,
   DeleteOutlined,
   ExpandOutlined,
   EllipsisOutlined,
-  PushpinOutlined,
+  UnlockOutlined,
 } from "@ant-design/icons";
 import { AiOutlineUsergroupAdd } from "react-icons/ai";
-import { Button, Dropdown, Menu, Tooltip } from "antd";
+import { Button, Dropdown, Tooltip } from "antd";
+import { useNote } from "../../contexts/NotesContext";
 
 const formatDate = (dateString) => {
   if (!dateString) return "";
-  return new Date(dateString).toISOString().split("T")[0];
+  const date = new Date(dateString);
+  return date.toISOString().split("T")[0];
 };
 
-const NoteHeader = ({
-  title,
-  setTitle,
-  note,
-  isDetailView,
-  navigate,
-  setConfirmDelete,
-  handleInput,
-  content,
-  onPin,
-}) => {
-  const menu = (
-    <Menu>
-      <Menu.Item key="invite" onClick={(e) => e.domEvent.stopPropagation()}>
-        <span className="text-base">Invite</span>
-      </Menu.Item>
-      <Menu.Item
-        key="delete"
-        onClick={(e) => {
-          e.domEvent.stopPropagation();
-          setConfirmDelete(true);
-        }}
-      >
-        <span className="text-base">Delete Note</span>
-      </Menu.Item>
-    </Menu>
-  );
+const NoteHeader = () => {
+  const {
+    note,
+    title,
+    setTitle,
+    content,
+    isDetailView,
+    navigate,
+    setConfirmDelete,
+    handleInput,
+    handlePin,
+    setShowLockModal,
+    handleLockConfirm,
+  } = useNote();
+
+  const handleLockClick = (e) => {
+    e.stopPropagation();
+    if (note.lockStatus?.password && !note.lockStatus?.isLocked) {
+      // Directly lock the note if password exists and note is not locked
+      handleLockConfirm(note.lockStatus.password, true, true);
+    } else {
+      // Show modal for setting password or unlocking
+      setShowLockModal(true);
+    }
+  };
+
+  const handleEnableLock = (e) => {
+    e.domEvent?.stopPropagation();
+    handleLockConfirm(null, true, false); // Enable feature without locking
+  };
+
+  const handleDisableLock = (e) => {
+    e.domEvent?.stopPropagation();
+    setShowLockModal(true); // Show modal for disabling
+  };
+
+  const menu = {
+    items: isDetailView
+      ? [
+          {
+            key: "lock",
+            label: note.lockFeatureEnabled
+              ? "Disable Lock Feature"
+              : "Enable Lock Feature",
+            onClick: note.lockFeatureEnabled
+              ? handleDisableLock
+              : handleEnableLock,
+          },
+        ]
+      : [
+          {
+            key: "invite",
+            label: "Invite",
+            onClick: (e) => e.domEvent.stopPropagation(),
+          },
+          {
+            key: "delete",
+            label: "Delete Note",
+            onClick: (e) => {
+              e.domEvent.stopPropagation();
+              setConfirmDelete(true);
+            },
+          },
+          {
+            key: "lock",
+            label: note.lockFeatureEnabled
+              ? "Disable Lock Feature"
+              : "Enable Lock Feature",
+            onClick: note.lockFeatureEnabled
+              ? handleDisableLock
+              : handleEnableLock,
+          },
+        ],
+  };
 
   return (
     <>
@@ -75,24 +124,52 @@ const NoteHeader = ({
                     type={note.isPinned ? "primary" : "default"}
                     onClick={(e) => {
                       e.stopPropagation();
-                      onPin(note.id);
+                      handlePin();
                     }}
                     className="text-lg"
                   />
                 </Tooltip>
+                {note.lockFeatureEnabled && (
+                  <Tooltip
+                    title={
+                      note.lockStatus?.isLocked ? "Unlock Note" : "Lock Note"
+                    }
+                  >
+                    <Button
+                      className="rounded-full hover:bg-gray-100 cursor-pointer text-blue-500"
+                      onClick={handleLockClick}
+                      icon={<UnlockOutlined />}
+                    />
+                  </Tooltip>
+                )}
                 <Tooltip title="Invite">
                   <Button
                     icon={<AiOutlineUsergroupAdd />}
                     className="text-lg"
                   />
                 </Tooltip>
+
                 <Tooltip title="Delete">
                   <Button
                     icon={<DeleteOutlined />}
                     danger
                     onClick={() => setConfirmDelete(true)}
-                    className="text-lg"
                   />
+                </Tooltip>
+
+                <Tooltip title="More">
+                  <Dropdown
+                    menu={menu}
+                    trigger={["click"]}
+                    placement="bottomRight"
+                  >
+                    <div
+                      className="p-1 rounded-full hover:bg-gray-100"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <EllipsisOutlined className="text-gray-400 text-lg" />
+                    </div>
+                  </Dropdown>
                 </Tooltip>
               </div>
             </div>
@@ -129,7 +206,7 @@ const NoteHeader = ({
           </div>
         </div>
         {!isDetailView && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 relative z-10">
             <Tooltip title={note.isPinned ? "Unpin" : "Pin"}>
               <div
                 className={`p-1 rounded-full hover:bg-gray-100 cursor-pointer ${
@@ -137,12 +214,24 @@ const NoteHeader = ({
                 }`}
                 onClick={(e) => {
                   e.stopPropagation();
-                  onPin(note.id);
+                  handlePin();
                 }}
               >
                 <PushpinOutlined className="text-lg" />
               </div>
             </Tooltip>
+            {note.lockFeatureEnabled && (
+              <Tooltip
+                title={note.lockStatus?.isLocked ? "Unlock Note" : "Lock Note"}
+              >
+                <div
+                  className="p-1 rounded-full hover:bg-gray-100 cursor-pointer text-blue-500"
+                  onClick={handleLockClick}
+                >
+                  <UnlockOutlined className="text-lg" />
+                </div>
+              </Tooltip>
+            )}
             <Tooltip title="View Details">
               <div
                 className="p-1 rounded-full hover:bg-gray-100 cursor-pointer"
@@ -155,11 +244,7 @@ const NoteHeader = ({
               </div>
             </Tooltip>
             <Tooltip title="More">
-              <Dropdown
-                overlay={menu}
-                trigger={["click"]}
-                placement="bottomRight"
-              >
+              <Dropdown menu={menu} trigger={["click"]} placement="bottomRight">
                 <div
                   className="p-1 rounded-full hover:bg-gray-100"
                   onClick={(e) => e.stopPropagation()}

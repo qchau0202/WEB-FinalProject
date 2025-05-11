@@ -5,7 +5,7 @@ import Login from "../pages/Login";
 import Register from "../pages/Register";
 import Profile from "../pages/Profile";
 import NoteDetail from "../pages/NoteDetail";
-import PinnedNotes from "../pages/PinnedNotes";
+import SharedNotes from "../pages/SharedNotes";
 
 const router = createBrowserRouter([
   {
@@ -17,12 +17,12 @@ const router = createBrowserRouter([
         element: <Home />,
       },
       {
-        path: "/pinned",
-        element: <PinnedNotes />,
-      },
-      {
         path: "/note/:id",
         element: <NoteDetail />,
+      },
+      {
+        path: "/shared",
+        element: <SharedNotes />,
       },
       {
         path: "/profile/:id",
