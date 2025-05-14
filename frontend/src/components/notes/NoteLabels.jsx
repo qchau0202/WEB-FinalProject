@@ -1,6 +1,6 @@
 import { PlusOutlined, TagOutlined } from "@ant-design/icons";
 import { Dropdown, Tooltip } from "antd";
-import { useLabel } from "../../contexts/LabelsContext";
+// import { useLabel } from "../../contexts/LabelsContext";
 import { useNote } from "../../contexts/NotesContext";
 
 const LABEL_MAX_WIDTH = 100; // px, max width for each label
@@ -8,14 +8,14 @@ const CONTAINER_MAX_WIDTH = 220; // px, total width for labels + badge
 
 const NoteLabels = ({ onClick }) => {
   const { labels: noteLabels, isDetailView, handleAddLabel } = useNote();
-  const { availableLabels } = useLabel();
+  // const { availableLabels } = useLabel();
 
   const customColor = "#ffffff";
 
   // Find labels that haven't been added yet
-  const remainingLabels = availableLabels.filter(
-    (availLabel) => !noteLabels.some((label) => label.name === availLabel.name)
-  );
+  // const remainingLabels = availableLabels.filter(
+  //   (availLabel) => !noteLabels.some((label) => label.name === availLabel.name)
+  // );
 
   let visibleLabels = [];
   let hiddenLabels = [];
@@ -59,32 +59,33 @@ const NoteLabels = ({ onClick }) => {
 
   const menu = {
     items:
-      remainingLabels.length > 0
-        ? remainingLabels.map((label, index) => ({
-            key: label.id || index,
-            label: (
-              <div className="flex items-center">
-                <span
-                  className={`w-4 h-4 rounded-full mr-2`}
-                  style={{ backgroundColor: label.color }}
-                ></span>
-                <span className="text-base">{label.name}</span>
-              </div>
-            ),
-            onClick: (e) => {
-              e.domEvent.stopPropagation();
-              handleAddLabel(label);
-            },
-          }))
-        : [
-            {
-              key: "no-labels",
-              label: (
-                <span className="text-base">All labels already added</span>
-              ),
-              disabled: true,
-            },
-          ],
+      // remainingLabels.length > 0
+      //   ? remainingLabels.map((label, index) => ({
+      //       key: label.id || index,
+      //       label: (
+      //         <div className="flex items-center">
+      //           <span
+      //             className={`w-4 h-4 rounded-full mr-2`}
+      //             style={{ backgroundColor: label.color }}
+      //           ></span>
+      //           <span className="text-base">{label.name}</span>
+      //         </div>
+      //       ),
+      //       onClick: (e) => {
+      //         e.domEvent.stopPropagation();
+      //         handleAddLabel(label);
+      //       },
+      //     }))
+      //   : [
+      //       {
+      //         key: "no-labels",
+      //         label: (
+      //           <span className="text-base">All labels already added</span>
+      //         ),
+      //         disabled: true,
+      //       },
+    //     ],
+    <></>
   };
 
   const addLabelButton = (
@@ -163,11 +164,11 @@ const NoteLabels = ({ onClick }) => {
           )}
         </>
       )}
-      {remainingLabels.length > 0 && (
+      {/* {remainingLabels.length > 0 && (
         <Dropdown menu={menu} trigger={["click"]} placement="bottomRight">
           <Tooltip title="Add label">{addLabelButton}</Tooltip>
         </Dropdown>
-      )}
+      )} */}      
     </div>
   );
 };

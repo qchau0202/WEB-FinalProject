@@ -46,7 +46,10 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
 
   useEffect(() => {
     if (currentUser) {
-      setShowVerification(currentUser.isVerified === false);
+      // setShowVerification(currentUser.isVerified === false);
+      setShowVerification(currentUser.email_verified_at === null);
+    } else {
+      setShowVerification(false);
     }
   }, [currentUser]);
 
@@ -58,10 +61,11 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
     }
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    // Make this async
+    await logout(); // Call the context's logout function (which is async)
     toast.success("Logged out successfully");
-    navigate("/login");
+    navigate("/login"); // Navigate after logout completes
   };
 
   const handleProfileClick = () => {
@@ -125,7 +129,6 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
 
       {/* Main Navigation */}
       <div className="flex-1 overflow-y-auto py-2 flex flex-col">
-        {/* Quick Access */}
         <div className={`px-3 ${isCollapsed ? "mb-2" : "mb-4"}`}>
           {!isCollapsed && (
             <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">
@@ -180,7 +183,6 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
           </div>
         </div>
 
-        {/* Labels */}
         <LabelManagement
           isCollapsed={isCollapsed}
           isMobile={isMobile}
@@ -192,7 +194,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       {/* Footer */}
       <div className={`p-3 ${isCollapsed ? "flex justify-center" : ""}`}>
         {/* Login reminder or verification warning */}
-        {!isCollapsed && !isAuthenticated() && (
+        {!isCollapsed && !isAuthenticated && (
           <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-md flex items-start gap-3 relative">
             <ExclamationCircleFilled className="text-blue-500 text-lg mt-0.5" />
             <div className="flex-1 min-w-0 text-xs text-blue-800">
@@ -246,45 +248,34 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
               trigger={["click"]}
               placement="topRight"
             >
-              <div className="p-2 hover:bg-gray-100 rounded-md cursor-pointer">
-                <SettingOutlined className="text-gray-500" />
-              </div>
+              <Button
+                type="text"
+                icon={<SettingOutlined />}
+                className="text-gray-500"
+              />
             </Dropdown>
           </Tooltip>
         ) : (
-          <div className="flex items-center justify-between">
-            {currentUser ? (
-              <>
-                <div
-                  className="flex items-center gap-2 cursor-pointer"
-                  onClick={handleProfileClick}
-                >
-                  <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium text-xs">
-                    {currentUser.display_name?.[0]?.toUpperCase() || "U"}
-                  </div>
-                  <span className="text-base md:text-lg font-medium truncate max-w-[120px]">
-                    {currentUser.display_name || "User"}
-                  </span>
+          <div className="flex items-center gap-2 p-2 rounded-md hover:bg-gray-100 cursor-pointer">
+            <Dropdown
+              menu={settingsMenu}
+              trigger={["click"]}
+              placement="topRight"
+            >
+              <div className="flex items-center gap-2 flex-1">
+                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                  <UserOutlined className="text-blue-600" />
                 </div>
-                <Dropdown
-                  menu={settingsMenu}
-                  trigger={["click"]}
-                  placement="topRight"
-                >
-                  <SettingOutlined className="text-gray-500 cursor-pointer" />
-                </Dropdown>
-              </>
-            ) : (
-              <div className="flex items-center gap-2 w-full">
-                <Button
-                  type="primary"
-                  onClick={() => navigate("/login")}
-                  className="w-full"
-                >
-                  Login
-                </Button>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-gray-900 truncate">
+                    {currentUser?.name || "Guest"}
+                  </div>
+                  <div className="text-xs text-gray-500 truncate">
+                    {currentUser?.email || "Not logged in"}
+                  </div>
+                </div>
               </div>
-            )}
+            </Dropdown>
           </div>
         )}
       </div>

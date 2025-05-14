@@ -1,25 +1,22 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { message } from "antd";
 import ProfileNavigation from "../components/profile/ProfileNavigation";
 import ProfileContent from "../components/profile/ProfileContent";
+import { useAuth } from "../contexts/AuthContext";
 
 const Profile = () => {
   const { id } = useParams();
-  const [user, setUser] = useState(null);
+  const { currentUser, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState("general");
 
-  useEffect(() => {
-    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-    if (currentUser && currentUser.id === parseInt(id)) {
-      setUser(currentUser);
-    } else {
-      message.error("User not found");
-    }
-  }, [id]);
-
-  if (!user) {
+  if (isLoading) {
     return <div className="p-6 text-gray-500">Loading...</div>;
+  }
+
+  if (!currentUser || currentUser.id !== parseInt(id)) {
+    message.error("User not found");
+    return <div className="p-6 text-gray-500">User not found</div>;
   }
 
   return (
@@ -34,7 +31,7 @@ const Profile = () => {
         </div>
         {/* Content Card */}
         <div className="md:w-3/4 py-2">
-          <ProfileContent user={user} activeTab={activeTab} />
+          <ProfileContent user={currentUser} activeTab={activeTab} />
         </div>
       </div>
     </div>

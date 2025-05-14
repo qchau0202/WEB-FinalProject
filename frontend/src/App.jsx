@@ -1,9 +1,9 @@
 import { RouterProvider } from "react-router-dom";
-import { LabelProvider } from "./contexts/LabelsContext";
 import router from "./routes";
 import { ConfigProvider } from "antd";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./contexts/AuthContext";
+import { LabelProvider } from "./contexts/LabelsContext";
 
 const App = () => {
   return (

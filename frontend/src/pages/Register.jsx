@@ -1,91 +1,112 @@
+// frontend/src/pages/Register.jsx
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { mockUsers } from "../mock-data/users";
 import toast from "react-hot-toast";
 import {
   UserOutlined,
   LockOutlined,
   MailOutlined,
-  UploadOutlined,
+  // UploadOutlined, // Avatar upload is not handled by backend yet, can be added later
 } from "@ant-design/icons";
-import background from "/bg.jpg"
+import { useAuth } from "../contexts/AuthContext"; // Use your AuthContext
+import background from "/bg.jpg";
 
 const Register = () => {
   const navigate = useNavigate();
+  const { register } = useAuth(); // Get register function from context
   const [formData, setFormData] = useState({
     email: "",
-    display_name: "",
+    display_name: "", // Frontend uses display_name
     password: "",
-    confirm_password: "",
-    avatar: null,
+    password_confirmation: "", // Backend expects this
+    // avatar: null, // Defer avatar for now as backend doesn't handle it on register
   });
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
-    const { name, value, files } = e.target;
+    const { name, value /*, files */ } = e.target;
     setFormData((prevState) => ({
       ...prevState,
-      [name]: files ? files[0] : value,
+      [name]: value, // For now, only handle text inputs
+      // [name]: files ? files[0] : value, // If you re-enable avatar
     }));
-    setError(""); // Clear error when user types
+    setError("");
+    setFieldErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+    setFieldErrors({});
 
-    // Check if passwords match
-    if (formData.password !== formData.confirm_password) {
+    // Basic client-side check (backend will also validate)
+    if (formData.password !== formData.password_confirmation) {
       setError("Passwords do not match");
+      setFieldErrors({ password_confirmation: ["Passwords do not match."] });
       toast.error("Passwords do not match");
       return;
     }
+    setIsSubmitting(true);
 
-    // Check if email already exists
-    if (mockUsers.some((user) => user.email === formData.email)) {
-      setError("Email already registered");
-      toast.error("Email already registered");
-      return;
+    try {
+      // Prepare data for backend: backend expects 'name', not 'display_name'
+      const backendData = {
+        name: formData.display_name,
+        email: formData.email,
+        password: formData.password,
+        password_confirmation: formData.password_confirmation,
+      };
+
+      await register(backendData); // Call context register
+      toast.success(
+        "Registration successful! Please verify your email to activate your account."
+      );
+      navigate("/"); // Navigate to home page
+    } catch (err) {
+      if (err.response && err.response.data) {
+        if (err.response.status === 422 && err.response.data.errors) {
+          setFieldErrors(err.response.data.errors);
+          // Map backend 'name' error back to 'display_name' if needed for display
+          if (err.response.data.errors.name) {
+            setFieldErrors((prev) => ({
+              ...prev,
+              display_name: err.response.data.errors.name,
+            }));
+          }
+          setError("Please check the fields below.");
+          toast.error("Registration failed. Please check your input.");
+        } else if (err.response.data.message) {
+          setError(err.response.data.message);
+          toast.error(err.response.data.message);
+        } else {
+          setError("Registration failed. Please try again.");
+          toast.error("Registration failed. An unknown error occurred.");
+        }
+      } else {
+        setError(
+          "Registration failed. Please check your connection and try again."
+        );
+        toast.error(
+          "Registration failed. Network error or server unavailable."
+        );
+      }
+      console.error("Registration error:", err);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // Create new user (in a real app, this would be an API call)
-    const newUser = {
-      id: mockUsers.length + 1,
-      email: formData.email,
-      display_name: formData.display_name,
-      password: formData.password, // In a real app, this would be hashed
-      avatar: formData.avatar
-        ? URL.createObjectURL(formData.avatar)
-        : "https://i.pravatar.cc/150?img=" + (mockUsers.length + 1),
-      preferences: {
-        theme: "light",
-        fontSize: "medium",
-        noteColors: ["#ffebee", "#e8f5e9", "#e3f2fd"],
-      },
-      email_verified_at: null,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    // Store user data in localStorage (in a real app, you'd use a more secure method)
-    localStorage.setItem(
-      "currentUser",
-      JSON.stringify({
-        id: newUser.id,
-        email: newUser.email,
-        display_name: newUser.display_name,
-        avatar: newUser.avatar,
-        preferences: newUser.preferences,
-      })
-    );
-
-    toast.success("Account created successfully!");
-    // Navigate to home page
-    navigate("/");
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8"
-    style={{backgroundImage: `url(${background})`, backgroundSize: "cover", backgroundPosition: "center"}}>
+    <div
+      className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8"
+      style={{
+        backgroundImage: `url(${background})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+    >
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-sm border border-gray-100">
         <div>
           <h2 className="mt-6 text-center text-3xl font-bold text-gray-800">
@@ -102,8 +123,8 @@ const Register = () => {
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+          {error && !Object.keys(fieldErrors).length && (
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm mb-4">
               {error}
             </div>
           )}
@@ -123,13 +144,22 @@ const Register = () => {
                   id="email"
                   name="email"
                   type="email"
+                  autoComplete="email"
                   required
-                  className="appearance-none rounded-lg relative block w-full pl-10 px-3 py-2 border border-gray-300 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-colors"
+                  className={`appearance-none rounded-lg relative block w-full pl-10 px-3 py-2 border ${
+                    fieldErrors.email ? "border-red-500" : "border-gray-300"
+                  } placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-colors`}
                   placeholder="Enter your email"
                   value={formData.email}
                   onChange={handleChange}
+                  disabled={isSubmitting}
                 />
               </div>
+              {fieldErrors.email && (
+                <p className="text-xs text-red-500 mt-1">
+                  {fieldErrors.email[0]}
+                </p>
+              )}
             </div>
             <div>
               <label
@@ -146,13 +176,24 @@ const Register = () => {
                   id="display_name"
                   name="display_name"
                   type="text"
+                  autoComplete="name"
                   required
-                  className="appearance-none rounded-lg relative block w-full pl-10 px-3 py-2 border border-gray-300 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-colors"
+                  className={`appearance-none rounded-lg relative block w-full pl-10 px-3 py-2 border ${
+                    fieldErrors.display_name || fieldErrors.name
+                      ? "border-red-500"
+                      : "border-gray-300"
+                  } placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-colors`}
                   placeholder="Choose a display name"
                   value={formData.display_name}
                   onChange={handleChange}
+                  disabled={isSubmitting}
                 />
               </div>
+              {(fieldErrors.display_name || fieldErrors.name) && (
+                <p className="text-xs text-red-500 mt-1">
+                  {(fieldErrors.display_name || fieldErrors.name)[0]}
+                </p>
+              )}
             </div>
             <div>
               <label
@@ -169,17 +210,26 @@ const Register = () => {
                   id="password"
                   name="password"
                   type="password"
+                  autoComplete="new-password"
                   required
-                  className="appearance-none rounded-lg relative block w-full pl-10 px-3 py-2 border border-gray-300 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-colors"
-                  placeholder="Create a password"
+                  className={`appearance-none rounded-lg relative block w-full pl-10 px-3 py-2 border ${
+                    fieldErrors.password ? "border-red-500" : "border-gray-300"
+                  } placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-colors`}
+                  placeholder="Create a password (min 8 characters)"
                   value={formData.password}
                   onChange={handleChange}
+                  disabled={isSubmitting}
                 />
               </div>
+              {fieldErrors.password && (
+                <p className="text-xs text-red-500 mt-1">
+                  {fieldErrors.password[0]}
+                </p>
+              )}
             </div>
             <div>
               <label
-                htmlFor="confirm_password"
+                htmlFor="password_confirmation"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
                 Confirm Password
@@ -189,53 +239,38 @@ const Register = () => {
                   <LockOutlined className="text-gray-400" />
                 </div>
                 <input
-                  id="confirm_password"
-                  name="confirm_password"
+                  id="password_confirmation"
+                  name="password_confirmation"
                   type="password"
+                  autoComplete="new-password"
                   required
-                  className="appearance-none rounded-lg relative block w-full pl-10 px-3 py-2 border border-gray-300 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-colors"
+                  className={`appearance-none rounded-lg relative block w-full pl-10 px-3 py-2 border ${
+                    fieldErrors.password_confirmation
+                      ? "border-red-500"
+                      : "border-gray-300"
+                  } placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-colors`}
                   placeholder="Confirm your password"
-                  value={formData.confirm_password}
+                  value={formData.password_confirmation}
                   onChange={handleChange}
+                  disabled={isSubmitting}
                 />
               </div>
+              {fieldErrors.password_confirmation && (
+                <p className="text-xs text-red-500 mt-1">
+                  {fieldErrors.password_confirmation[0]}
+                </p>
+              )}
             </div>
-            <div>
-              <label
-                htmlFor="avatar"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Profile Picture (Optional)
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <UploadOutlined className="text-gray-400" />
-                </div>
-                <input
-                  id="avatar"
-                  name="avatar"
-                  type="file"
-                  accept="image/*"
-                  className="block w-full text-sm text-gray-500
-                    file:mr-4 file:py-2 file:px-4
-                    file:rounded-lg file:border-0
-                    file:text-sm file:font-medium
-                    file:bg-blue-50 file:text-blue-700
-                    hover:file:bg-blue-100
-                    file:transition-colors
-                    pl-10"
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
+            {/* Avatar input removed for now - can be added later when backend supports it */}
           </div>
 
           <div>
             <button
               type="submit"
-              className="group relative w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+              disabled={isSubmitting}
+              className="group relative w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50"
             >
-              Create Account
+              {isSubmitting ? "Creating Account..." : "Create Account"}
             </button>
           </div>
         </form>

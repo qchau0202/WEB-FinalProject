@@ -1,9 +1,9 @@
+// frontend/src/pages/Login.jsx
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { mockUsers } from "../mock-data/users";
 import toast from "react-hot-toast";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../contexts/AuthContext"; // Use your AuthContext
 import background from "/bg.jpg";
 
 const Login = () => {
@@ -13,7 +13,9 @@ const Login = () => {
     email: "",
     password: "",
   });
-  const [error, setError] = useState("");
+  const [error, setError] = useState(""); // For general form error
+  const [fieldErrors, setFieldErrors] = useState({}); // For specific field errors
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -21,44 +23,41 @@ const Login = () => {
       ...prevState,
       [name]: value,
     }));
-    setError(""); // Clear error when user types
+    setError(""); // Clear general error
+    setFieldErrors((prev) => ({ ...prev, [name]: undefined })); // Clear specific field error
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+    setFieldErrors({});
+    setIsSubmitting(true);
 
-    // Find user with matching email
-    const user = mockUsers.find((u) => u.email === formData.email);
-
-    if (!user) {
-      setError("User not found");
-      toast.error("User not found");
-      return;
+    try {
+      await login(formData);
+      toast.success("Logged in successfully!");
+      navigate("/");
+    } catch (err) {
+      if (err.response && err.response.data) {
+        if (err.response.status === 422 && err.response.data.errors) {
+          setFieldErrors(err.response.data.errors);
+          setError("Please check the fields below.");
+          toast.error("Validation failed. Please check your input.");
+        } else if (err.response.data.message) {
+          setError(err.response.data.message);
+          toast.error(err.response.data.message);
+        } else {
+          setError("Login failed. Please try again.");
+          toast.error("Login failed. An unknown error occurred.");
+        }
+      } else {
+        setError("Login failed. Please check your connection and try again.");
+        toast.error("Login failed. Network error or server unavailable.");
+      }
+      console.error("Login error:", err);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // Check password (in a real app, this would compare hashed passwords)
-    if (user.password !== formData.password) {
-      setError("Invalid password");
-      toast.error("Invalid password");
-      return;
-    }
-
-    // Login using auth context
-    login({
-      id: user.id,
-      email: user.email,
-      display_name: user.display_name,
-      avatar: user.avatar,
-      preferences: user.preferences,
-      email_verified_at: user.email_verified_at,
-      created_at: user.created_at,
-      isVerified: user.isVerified,
-      isActive: user.isActive,
-    });
-
-    toast.success("Logged in successfully!");
-    // Navigate to home page
-    navigate("/");
   };
 
   return (
@@ -86,11 +85,12 @@ const Login = () => {
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
+          {error &&
+            !Object.keys(fieldErrors).length && ( // Show general error if no field errors
+              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm mb-4">
+                {error}
+              </div>
+            )}
           <div className="rounded-md space-y-4">
             <div>
               <label
@@ -107,13 +107,22 @@ const Login = () => {
                   id="email"
                   name="email"
                   type="email"
+                  autoComplete="email"
                   required
-                  className="appearance-none rounded-lg relative block w-full pl-10 px-3 py-2 border border-gray-300 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-colors"
+                  className={`appearance-none rounded-lg relative block w-full pl-10 px-3 py-2 border ${
+                    fieldErrors.email ? "border-red-500" : "border-gray-300"
+                  } placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-colors`}
                   placeholder="Enter your email"
                   value={formData.email}
                   onChange={handleChange}
+                  disabled={isSubmitting}
                 />
               </div>
+              {fieldErrors.email && (
+                <p className="text-xs text-red-500 mt-1">
+                  {fieldErrors.email[0]}
+                </p>
+              )}
             </div>
             <div>
               <label
@@ -130,22 +139,32 @@ const Login = () => {
                   id="password"
                   name="password"
                   type="password"
+                  autoComplete="current-password"
                   required
-                  className="appearance-none rounded-lg relative block w-full pl-10 px-3 py-2 border border-gray-300 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-colors"
+                  className={`appearance-none rounded-lg relative block w-full pl-10 px-3 py-2 border ${
+                    fieldErrors.password ? "border-red-500" : "border-gray-300"
+                  } placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-colors`}
                   placeholder="Enter your password"
                   value={formData.password}
                   onChange={handleChange}
+                  disabled={isSubmitting}
                 />
               </div>
+              {fieldErrors.password && (
+                <p className="text-xs text-red-500 mt-1">
+                  {fieldErrors.password[0]}
+                </p>
+              )}
             </div>
           </div>
 
           <div>
             <button
               type="submit"
-              className="group relative w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+              disabled={isSubmitting}
+              className="group relative w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-50"
             >
-              Sign in
+              {isSubmitting ? "Signing in..." : "Sign in"}
             </button>
           </div>
         </form>
