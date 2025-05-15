@@ -9,6 +9,7 @@ import {
 import { AiOutlineUsergroupAdd } from "react-icons/ai";
 import { Button, Dropdown, Tooltip } from "antd";
 import { useNote } from "../../contexts/NotesContext";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const formatDate = (dateString) => {
   if (!dateString) return "";
@@ -30,6 +31,7 @@ const NoteHeader = () => {
     setShowLockModal,
     handleLockConfirm,
   } = useNote();
+  const { theme } = useTheme();
 
   const handleLockClick = (e) => {
     e.stopPropagation();
@@ -94,7 +96,13 @@ const NoteHeader = () => {
   return (
     <>
       {isDetailView && (
-        <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div
+          className={`border-b ${
+            theme === "dark"
+              ? "bg-gray-800 border-gray-700"
+              : "bg-white border-gray-200"
+          } sticky top-0 z-10`}
+        >
           <div className="px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -102,17 +110,31 @@ const NoteHeader = () => {
                   icon={<ArrowLeftOutlined />}
                   type="text"
                   onClick={() => navigate("/")}
-                  className="text-lg"
+                  className={`text-lg ${
+                    theme === "dark" ? "text-gray-200" : "text-gray-600"
+                  }`}
                 />
-                <div className="text-base text-gray-500 flex items-center">
+                <div
+                  className={`text-base ${
+                    theme === "dark" ? "text-gray-400" : "text-gray-500"
+                  } flex items-center`}
+                >
                   <span
-                    className="cursor-pointer hover:text-blue-500"
+                    className={`cursor-pointer ${
+                      theme === "dark"
+                        ? "hover:text-blue-400"
+                        : "hover:text-blue-500"
+                    }`}
                     onClick={() => navigate("/")}
                   >
                     All Notes
                   </span>
                   <span className="mx-2">/</span>
-                  <span className="text-gray-700 font-medium truncate max-w-xs">
+                  <span
+                    className={`${
+                      theme === "dark" ? "text-gray-200" : "text-gray-700"
+                    } font-medium truncate max-w-xs`}
+                  >
                     {title || "Untitled"}
                   </span>
                 </div>
@@ -126,7 +148,9 @@ const NoteHeader = () => {
                       e.stopPropagation();
                       handlePin();
                     }}
-                    className="text-lg"
+                    className={`text-lg ${
+                      theme === "dark" ? "text-gray-200" : "text-gray-600"
+                    }`}
                   />
                 </Tooltip>
                 {note.lockFeatureEnabled && (
@@ -136,7 +160,11 @@ const NoteHeader = () => {
                     }
                   >
                     <Button
-                      className="rounded-full hover:bg-gray-100 cursor-pointer text-blue-500"
+                      className={`rounded-full ${
+                        theme === "dark"
+                          ? "hover:bg-gray-700"
+                          : "hover:bg-gray-100"
+                      } cursor-pointer text-blue-400`}
                       onClick={handleLockClick}
                       icon={<UnlockOutlined />}
                     />
@@ -145,7 +173,9 @@ const NoteHeader = () => {
                 <Tooltip title="Invite">
                   <Button
                     icon={<AiOutlineUsergroupAdd />}
-                    className="text-lg"
+                    className={`text-lg ${
+                      theme === "dark" ? "text-gray-200" : "text-gray-600"
+                    }`}
                   />
                 </Tooltip>
 
@@ -164,10 +194,14 @@ const NoteHeader = () => {
                     placement="bottomRight"
                   >
                     <div
-                      className="p-1 rounded-full hover:bg-gray-100"
+                      className={`p-1 rounded-full ${
+                        theme === "dark"
+                          ? "hover:bg-gray-700 text-white"
+                          : "hover:bg-gray-100"
+                      }`}
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <EllipsisOutlined className="text-gray-400 text-lg" />
+                      <EllipsisOutlined className="text-lg" />
                     </div>
                   </Dropdown>
                 </Tooltip>
@@ -185,9 +219,9 @@ const NoteHeader = () => {
               setTitle(e.target.value);
               handleInput(e.target.value, content);
             }}
-            className={`font-medium bg-transparent border-none focus:outline-none text-gray-900 w-full ${
+            className={`font-medium bg-transparent border-none focus:outline-none w-full ${
               isDetailView ? "text-2xl" : "text-xl"
-            }`}
+            } ${theme === "dark" ? "text-gray-100" : "text-gray-900"}`}
             placeholder="Title"
             onClick={(e) => e.stopPropagation()}
             style={{
@@ -197,7 +231,11 @@ const NoteHeader = () => {
               whiteSpace: "nowrap",
             }}
           />
-          <div className="text-sm text-gray-400 mt-1">
+          <div
+            className={`text-sm mt-1 ${
+              theme === "dark" ? "text-gray-400" : "text-gray-500"
+            }`}
+          >
             {note.updatedAt && note.updatedAt !== note.createdAt ? (
               <>Updated: {formatDate(note.updatedAt)}</>
             ) : (
@@ -209,8 +247,14 @@ const NoteHeader = () => {
           <div className="flex items-center gap-2 relative z-10">
             <Tooltip title={note.isPinned ? "Unpin" : "Pin"}>
               <div
-                className={`p-1 rounded-full hover:bg-gray-100 cursor-pointer ${
-                  note.isPinned ? "text-blue-500" : "text-gray-400"
+                className={`p-1 rounded-full ${
+                  theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                } cursor-pointer ${
+                  note.isPinned
+                    ? "text-blue-400"
+                    : theme === "dark"
+                    ? "text-gray-300"
+                    : "text-gray-500"
                 }`}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -225,7 +269,9 @@ const NoteHeader = () => {
                 title={note.lockStatus?.isLocked ? "Unlock Note" : "Lock Note"}
               >
                 <div
-                  className="p-1 rounded-full hover:bg-gray-100 cursor-pointer text-blue-500"
+                  className={`p-1 rounded-full ${
+                    theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                  } cursor-pointer text-blue-400`}
                   onClick={handleLockClick}
                 >
                   <UnlockOutlined className="text-lg" />
@@ -234,22 +280,30 @@ const NoteHeader = () => {
             )}
             <Tooltip title="View Details">
               <div
-                className="p-1 rounded-full hover:bg-gray-100 cursor-pointer"
+                className={`p-1 rounded-full ${
+                  theme === "dark"
+                    ? "hover:bg-gray-700 text-white"
+                    : "hover:bg-gray-100"
+                } cursor-pointer `}
                 onClick={(e) => {
                   e.stopPropagation();
                   navigate(`/note/${note.id}`);
                 }}
               >
-                <ExpandOutlined className="text-gray-400 text-lg" />
+                <ExpandOutlined className="text-lg" />
               </div>
             </Tooltip>
             <Tooltip title="More">
               <Dropdown menu={menu} trigger={["click"]} placement="bottomRight">
                 <div
-                  className="p-1 rounded-full hover:bg-gray-100"
+                  className={`p-1 rounded-full ${
+                    theme === "dark"
+                      ? "hover:bg-gray-700 text-white"
+                      : "hover:bg-gray-100"
+                  }`}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <EllipsisOutlined className="text-gray-400 text-lg" />
+                  <EllipsisOutlined className="text-lg" />
                 </div>
               </Dropdown>
             </Tooltip>

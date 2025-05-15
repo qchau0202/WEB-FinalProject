@@ -1,0 +1,393 @@
+{
+  "info": {
+    "name": "NoteLit API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Get CSRF Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.environment.set('CSRF_TOKEN', jsonData.csrf_token);",
+                  "console.log('CSRF Token set:', jsonData.csrf_token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{BASE_URL}}/csrf-token"
+          }
+        },
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Get CSRF token before registration",
+                  "pm.sendRequest(pm.environment.get('BASE_URL') + '/csrf-token', function (err, res) {",
+                  "    if (!err) {",
+                  "        pm.environment.set('CSRF_TOKEN', res.json().csrf_token);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Registration successful', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('USER_UUID', jsonData.user.uuid);",
+                  "    console.log('User registered:', jsonData.user);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{BASE_URL}}/register",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{CSRF_TOKEN}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Test User\",\n    \"email\": \"test@example.com\",\n    \"password\": \"password123\",\n    \"password_confirmation\": \"password123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Get CSRF token before login",
+                  "pm.sendRequest(pm.environment.get('BASE_URL') + '/csrf-token', function (err, res) {",
+                  "    if (!err) {",
+                  "        pm.environment.set('CSRF_TOKEN', res.json().csrf_token);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Login successful', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('USER_UUID', jsonData.user.uuid);",
+                  "    console.log('User logged in:', jsonData.user);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{BASE_URL}}/login",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{CSRF_TOKEN}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"password123\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notes",
+      "item": [
+        {
+          "name": "Get All Notes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Get notes successful', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.own_notes.length > 0) {",
+                  "        pm.environment.set('NOTE_UUID', jsonData.own_notes[0].uuid);",
+                  "        console.log('First note UUID set:', jsonData.own_notes[0].uuid);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{BASE_URL}}/notes",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{CSRF_TOKEN}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Create Note",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Note created successfully', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('NOTE_UUID', jsonData.note.uuid);",
+                  "    console.log('Note created:', jsonData.note);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{BASE_URL}}/notes",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{CSRF_TOKEN}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"title\": \"Test Note\",\n    \"content\": \"This is a test note\",\n    \"is_public\": false,\n    \"is_locked\": false,\n    \"labels\": []\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Note",
+          "request": {
+            "method": "GET",
+            "url": "{{BASE_URL}}/notes/{{NOTE_UUID}}",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{CSRF_TOKEN}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Update Note",
+          "request": {
+            "method": "PUT",
+            "url": "{{BASE_URL}}/notes/{{NOTE_UUID}}",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{CSRF_TOKEN}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"title\": \"Updated Note\",\n    \"content\": \"This is an updated note\",\n    \"is_public\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Add Collaborator",
+          "request": {
+            "method": "POST",
+            "url": "{{BASE_URL}}/notes/{{NOTE_UUID}}/collaborators",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{CSRF_TOKEN}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"collaborator@example.com\",\n    \"permission\": \"write\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Upload Attachment",
+          "request": {
+            "method": "POST",
+            "url": "{{BASE_URL}}/notes/{{NOTE_UUID}}/attachments",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{CSRF_TOKEN}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Labels",
+      "item": [
+        {
+          "name": "Get All Labels",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Get labels successful', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.length > 0) {",
+                  "        pm.environment.set('LABEL_ID', jsonData[0].id);",
+                  "        console.log('First label ID set:', jsonData[0].id);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{BASE_URL}}/labels",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{CSRF_TOKEN}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Create Label",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Label created successfully', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('LABEL_ID', jsonData.label.id);",
+                  "    console.log('Label created:', jsonData.label);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{BASE_URL}}/labels",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{CSRF_TOKEN}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Important\",\n    \"color\": \"#FF0000\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Label",
+          "request": {
+            "method": "PUT",
+            "url": "{{BASE_URL}}/labels/{{LABEL_ID}}",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{CSRF_TOKEN}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Very Important\",\n    \"color\": \"#FF0000\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Label",
+          "request": {
+            "method": "DELETE",
+            "url": "{{BASE_URL}}/labels/{{LABEL_ID}}",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{CSRF_TOKEN}}"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+} 

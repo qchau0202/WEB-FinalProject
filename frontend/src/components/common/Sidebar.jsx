@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useLabel } from "../../contexts/LabelsContext";
 import { useAuth } from "../../contexts/AuthContext";
+import { useTheme } from "../../contexts/ThemeContext";
 import {
   SettingOutlined,
   MenuUnfoldOutlined,
@@ -22,6 +23,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
   const location = useLocation();
   const { currentUser, logout, isAuthenticated } = useAuth();
   const { selectedLabel, setSelectedLabel } = useLabel();
+  const { theme } = useTheme();
   const [isMobile, setIsMobile] = useState(false);
   const [localCollapsed, setLocalCollapsed] = useState(false);
   const [showVerification, setShowVerification] = useState(() => {
@@ -46,7 +48,6 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
 
   useEffect(() => {
     if (currentUser) {
-      // setShowVerification(currentUser.isVerified === false);
       setShowVerification(currentUser.email_verified_at === null);
     } else {
       setShowVerification(false);
@@ -62,15 +63,14 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
   };
 
   const handleLogout = async () => {
-    // Make this async
-    await logout(); // Call the context's logout function (which is async)
+    await logout();
     toast.success("Logged out successfully");
-    navigate("/login"); // Navigate after logout completes
+    navigate("/login");
   };
 
   const handleProfileClick = () => {
     if (currentUser) {
-      navigate(`/profile/${currentUser.id}`);
+      navigate(`/profile/${currentUser.uuid}`);
       if (isMobile) {
         setCollapsed?.(true);
       }
@@ -102,19 +102,27 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
 
   return (
     <div
-      className={`h-screen bg-white flex flex-col border-r border-gray-200 transition-all overflow-y-auto ${
+      className={`h-screen flex flex-col border-r transition-all overflow-y-auto ${
         isCollapsed ? "w-16" : "w-64"
-      } ${isMobile ? "fixed z-50" : "relative"}`}
+      } ${isMobile ? "fixed z-50" : "relative"} ${
+        theme === "dark"
+          ? "bg-gray-800 border-gray-700"
+          : "bg-white border-gray-200"
+      }`}
     >
       {/* Header */}
       <div
         className={`p-4 flex items-center ${
           isCollapsed ? "justify-center" : "justify-between"
-        } border-b border-gray-100`}
+        } border-b ${theme === "dark" ? "border-gray-700" : "border-gray-100"}`}
       >
         {!isCollapsed && (
           <Link to="/">
-            <h1 className="text-xl md:text-2xl font-bold text-blue-600">
+            <h1
+              className={`text-xl md:text-2xl font-bold ${
+                theme === "dark" ? "text-blue-400" : "text-blue-600"
+              }`}
+            >
               Notelit
             </h1>
           </Link>
@@ -123,7 +131,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
           type="text"
           icon={isCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
           onClick={toggleCollapsed}
-          className="text-gray-500"
+          className={theme === "dark" ? "text-gray-400" : "text-gray-500"}
         />
       </div>
 
@@ -131,7 +139,11 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       <div className="flex-1 overflow-y-auto py-2 flex flex-col">
         <div className={`px-3 ${isCollapsed ? "mb-2" : "mb-4"}`}>
           {!isCollapsed && (
-            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">
+            <h2
+              className={`text-xs font-semibold uppercase tracking-wider mb-2 px-2 ${
+                theme === "dark" ? "text-gray-400" : "text-gray-500"
+              }`}
+            >
               Quick Access
             </h2>
           )}
@@ -145,7 +157,11 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
               <div
                 className={`flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer ${
                   isHomeActive
-                    ? "bg-blue-50 text-blue-600"
+                    ? theme === "dark"
+                      ? "bg-blue-900/50 text-blue-400"
+                      : "bg-blue-50 text-blue-600"
+                    : theme === "dark"
+                    ? "hover:bg-gray-700 text-gray-300"
                     : "hover:bg-gray-100 text-gray-700"
                 }`}
                 onClick={() => {
@@ -165,7 +181,11 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
               <div
                 className={`flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer ${
                   isSharedActive
-                    ? "bg-blue-50 text-blue-600"
+                    ? theme === "dark"
+                      ? "bg-blue-900/50 text-blue-400"
+                      : "bg-blue-50 text-blue-600"
+                    : theme === "dark"
+                    ? "hover:bg-gray-700 text-gray-300"
                     : "hover:bg-gray-100 text-gray-700"
                 }`}
                 onClick={() => {
@@ -195,19 +215,41 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       <div className={`p-3 ${isCollapsed ? "flex justify-center" : ""}`}>
         {/* Login reminder or verification warning */}
         {!isCollapsed && !isAuthenticated && (
-          <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-md flex items-start gap-3 relative">
-            <ExclamationCircleFilled className="text-blue-500 text-lg mt-0.5" />
-            <div className="flex-1 min-w-0 text-xs text-blue-800">
+          <div
+            className={`mb-3 p-3 rounded-md flex items-start gap-3 relative ${
+              theme === "dark"
+                ? "bg-blue-900/50 border border-blue-800"
+                : "bg-blue-50 border border-blue-200"
+            }`}
+          >
+            <ExclamationCircleFilled
+              className={`text-lg mt-0.5 ${
+                theme === "dark" ? "text-blue-400" : "text-blue-500"
+              }`}
+            />
+            <div
+              className={`flex-1 min-w-0 text-xs ${
+                theme === "dark" ? "text-blue-300" : "text-blue-800"
+              }`}
+            >
               Please login to access all features. <br />
               <button
-                className="text-blue-600 hover:underline text-xs mt-1"
+                className={`text-xs mt-1 ${
+                  theme === "dark"
+                    ? "text-blue-400 hover:text-blue-300"
+                    : "text-blue-600 hover:underline"
+                }`}
                 onClick={() => navigate("/login")}
               >
                 Login now
               </button>
             </div>
             <button
-              className="absolute top-2 right-2 text-blue-500 hover:text-blue-700 text-xs"
+              className={`absolute top-2 right-2 text-xs ${
+                theme === "dark"
+                  ? "text-blue-400 hover:text-blue-300"
+                  : "text-blue-500 hover:text-blue-700"
+              }`}
               onClick={() => setShowVerification(false)}
               aria-label="Close notification"
             >
@@ -218,20 +260,42 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
 
         {/* Verification warning */}
         {!isCollapsed && showVerification && currentUser && (
-          <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md flex items-start gap-3 relative">
-            <ExclamationCircleFilled className="text-yellow-500 text-lg mt-0.5" />
-            <div className="flex-1 min-w-0 text-xs text-yellow-800">
+          <div
+            className={`mb-3 p-3 rounded-md flex items-start gap-3 relative ${
+              theme === "dark"
+                ? "bg-yellow-900/50 border border-yellow-800"
+                : "bg-yellow-50 border border-yellow-200"
+            }`}
+          >
+            <ExclamationCircleFilled
+              className={`text-lg mt-0.5 ${
+                theme === "dark" ? "text-yellow-400" : "text-yellow-500"
+              }`}
+            />
+            <div
+              className={`flex-1 min-w-0 text-xs ${
+                theme === "dark" ? "text-yellow-300" : "text-yellow-800"
+              }`}
+            >
               Your account is not verified. Please check your email to activate
               your account. <br />
               <button
-                className="text-blue-600 hover:underline text-xs mt-1"
+                className={`text-xs mt-1 ${
+                  theme === "dark"
+                    ? "text-blue-400 hover:text-blue-300"
+                    : "text-blue-600 hover:underline"
+                }`}
                 onClick={handleProfileClick}
               >
                 Account overview
               </button>
             </div>
             <button
-              className="absolute top-2 right-2 text-yellow-500 hover:text-yellow-700 text-xs"
+              className={`absolute top-2 right-2 text-xs ${
+                theme === "dark"
+                  ? "text-yellow-400 hover:text-yellow-300"
+                  : "text-yellow-500 hover:text-yellow-700"
+              }`}
               onClick={() => setShowVerification(false)}
               aria-label="Close notification"
             >
@@ -251,26 +315,50 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
               <Button
                 type="text"
                 icon={<SettingOutlined />}
-                className="text-gray-500"
+                className={theme === "dark" ? "text-gray-400" : "text-gray-500"}
               />
             </Dropdown>
           </Tooltip>
         ) : (
-          <div className="flex items-center gap-2 p-2 rounded-md hover:bg-gray-100 cursor-pointer">
+          <div
+            className={`flex items-center gap-2 p-2 rounded-md cursor-pointer ${
+              theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-100"
+            }`}
+          >
             <Dropdown
               menu={settingsMenu}
               trigger={["click"]}
               placement="topRight"
             >
               <div className="flex items-center gap-2 flex-1">
-                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                  <UserOutlined className="text-blue-600" />
+                <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center">
+                  {currentUser?.avatar ? (
+                    <img
+                      src={currentUser.avatar}
+                      alt={currentUser.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <UserOutlined
+                      className={
+                        theme === "dark" ? "text-blue-400" : "text-blue-600"
+                      }
+                    />
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-gray-900 truncate">
+                  <div
+                    className={`text-sm font-medium truncate ${
+                      theme === "dark" ? "text-gray-100" : "text-gray-900"
+                    }`}
+                  >
                     {currentUser?.name || "Guest"}
                   </div>
-                  <div className="text-xs text-gray-500 truncate">
+                  <div
+                    className={`text-xs truncate ${
+                      theme === "dark" ? "text-gray-400" : "text-gray-500"
+                    }`}
+                  >
                     {currentUser?.email || "Not logged in"}
                   </div>
                 </div>

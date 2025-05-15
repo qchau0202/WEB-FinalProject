@@ -7,6 +7,7 @@ import {
   UserAddOutlined,
   ExclamationCircleFilled,
 } from "@ant-design/icons";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const notificationColors = {
   info: "text-blue-500",
@@ -24,66 +25,8 @@ const notificationIcons = {
   delete: <CloseCircleOutlined className="text-red-500 text-lg" />,
 };
 
-// const demoNotifications = [
-//   {
-//     id: 1,
-//     type: "activation-suggestion",
-//     title: "Activate your account",
-//     message: "Please verify your account.",
-//     status: "info",
-//     timestamp: "2025-05-10T10:00:00Z",
-//   },
-//   {
-//     id: 2,
-//     type: "activation-success",
-//     title: "Account Activated",
-//     message: "Your account has been successfully activated!",
-//     status: "success",
-//     timestamp: "2025-05-10T10:05:00Z",
-//   },
-//   {
-//     id: 3,
-//     type: "invitation-pending",
-//     title: "Invitation Sent",
-//     message: "Invitation sent to Jane Doe to collaborate on 'Project Plan'.",
-//     status: "warning",
-//     timestamp: "2025-05-10T10:10:00Z",
-//   },
-//   {
-//     id: 4,
-//     type: "invitation-success",
-//     title: "Invitation Accepted",
-//     message: "Jane Doe accepted your invitation to collaborate.",
-//     status: "success",
-//     timestamp: "2025-05-10T10:15:00Z",
-//   },
-//   {
-//     id: 5,
-//     type: "invitation-failed",
-//     title: "Invitation Rejected",
-//     message: "John Smith rejected your invitation to collaborate.",
-//     status: "error",
-//     timestamp: "2025-05-10T10:20:00Z",
-//   },
-//   {
-//     id: 6,
-//     type: "invitation-accept",
-//     title: "Invitation Accepted",
-//     message: "You accepted an invitation from Alice to collaborate.",
-//     status: "success",
-//     timestamp: "2025-05-10T10:25:00Z",
-//   },
-//   {
-//     id: 7,
-//     type: "invitation-decline",
-//     title: "Invitation Declined",
-//     message: "You declined an invitation from Bob to collaborate.",
-//     status: "error",
-//     timestamp: "2025-05-10T10:30:00Z",
-//   },
-// ];
-
 const Notifications = ({ notifications = [], max = 3, onShowMore }) => {
+  const { theme } = useTheme();
   const showMore = notifications.length > max;
   const visibleNotifications = notifications.slice(0, max);
 
@@ -98,11 +41,20 @@ const Notifications = ({ notifications = [], max = 3, onShowMore }) => {
 
   return (
     <Menu
-      className="w-80"
+      className={`w-80 ${theme === "dark" ? "bg-gray-800" : "bg-white"} ${
+        theme === "dark"
+          ? "[&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-gray-700 [&::-webkit-scrollbar-thumb]:bg-gray-600 [&::-webkit-scrollbar-thumb]:rounded-full"
+          : "[&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full"
+      }`}
       style={{ maxHeight: 400, overflowY: "auto", overflowX: "hidden" }}
     >
       {notifications.length === 0 ? (
-        <Menu.Item disabled>No notifications</Menu.Item>
+        <Menu.Item
+          disabled
+          className={theme === "dark" ? "text-gray-400" : "text-gray-500"}
+        >
+          No notifications
+        </Menu.Item>
       ) : (
         <>
           {visibleNotifications.map((n) => (
@@ -114,13 +66,25 @@ const Notifications = ({ notifications = [], max = 3, onShowMore }) => {
                     notificationIcons.info}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-gray-800 text-sm mb-1">
+                  <div
+                    className={`font-semibold text-sm mb-1 ${
+                      theme === "dark" ? "text-gray-100" : "text-gray-800"
+                    }`}
+                  >
                     {n.title}
                   </div>
-                  <div className="text-xs text-gray-500 mb-1 whitespace-normal break-words">
+                  <div
+                    className={`text-xs mb-1 whitespace-normal break-words ${
+                      theme === "dark" ? "text-gray-400" : "text-gray-500"
+                    }`}
+                  >
                     {n.message}
                   </div>
-                  <div className="text-xs text-gray-400 mb-1">
+                  <div
+                    className={`text-xs mb-1 ${
+                      theme === "dark" ? "text-gray-500" : "text-gray-400"
+                    }`}
+                  >
                     {n.timestamp && new Date(n.timestamp).toLocaleString()}
                   </div>
                   {/* Invitation-pending actions (incoming/outgoing) */}
@@ -158,7 +122,11 @@ const Notifications = ({ notifications = [], max = 3, onShowMore }) => {
           {showMore && (
             <Menu.Item key="show-more" className="!p-3 !min-h-0 text-center">
               <button
-                className="text-blue-500 hover:underline text-sm"
+                className={`text-sm hover:underline ${
+                  theme === "dark"
+                    ? "text-blue-400 hover:text-blue-300"
+                    : "text-blue-500 hover:text-blue-600"
+                }`}
                 onClick={onShowMore}
                 style={{
                   outline: "none",
@@ -178,3 +146,50 @@ const Notifications = ({ notifications = [], max = 3, onShowMore }) => {
 };
 
 export default Notifications;
+// import React from "react";
+// import { List, Button, Typography } from "antd";
+// import { CloseOutlined } from "@ant-design/icons";
+
+// const { Text } = Typography;
+
+// const Notifications = ({ notifications, showAll, onShowMore, onClose }) => {
+//   const displayNotifications = showAll
+//     ? notifications
+//     : notifications.slice(0, 5);
+
+//   return (
+//     <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg z-50">
+//       <div className="p-4 border-b flex justify-between items-center">
+//         <Text strong>Notifications</Text>
+//         <Button
+//           type="text"
+//           icon={<CloseOutlined />}
+//           onClick={onClose}
+//           className="hover:bg-gray-100"
+//         />
+//       </div>
+//       <List
+//         dataSource={displayNotifications}
+//         renderItem={(notification) => (
+//           <List.Item className="px-4 py-2 hover:bg-gray-50">
+//             <div className="w-full">
+//               <Text>{notification.message}</Text>
+//               <Text type="secondary" className="block text-xs">
+//                 {new Date(notification.timestamp).toLocaleString()}
+//               </Text>
+//             </div>
+//           </List.Item>
+//         )}
+//       />
+//       {notifications.length > 5 && !showAll && (
+//         <div className="p-2 border-t text-center">
+//           <Button type="link" onClick={onShowMore}>
+//             Show More
+//           </Button>
+//         </div>
+//       )}
+//     </div>
+//   );
+// };
+
+// export default Notifications;

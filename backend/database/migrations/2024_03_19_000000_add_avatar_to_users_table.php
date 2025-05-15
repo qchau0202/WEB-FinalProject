@@ -6,17 +6,27 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('verification_token', 100)->nullable()->after('email_verified_at');
+            if (!Schema::hasColumn('users', 'avatar')) {
+                $table->text('avatar')->nullable()->after('password');
+            }
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('verification_token');
+            if (Schema::hasColumn('users', 'avatar')) {
+                $table->dropColumn('avatar');
+            }
         });
     }
-};
+}; 

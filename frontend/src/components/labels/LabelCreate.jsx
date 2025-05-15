@@ -2,6 +2,7 @@ import { Input, Modal } from "antd";
 import CustomColorPicker from "../ui/CustomColorPicker";
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const LabelCreate = ({
   isNewLabelModalVisible,
@@ -10,6 +11,7 @@ const LabelCreate = ({
 }) => {
   const [newLabelName, setNewLabelName] = useState("");
   const [newLabelColor, setNewLabelColor] = useState("#fadb14");
+  const { theme } = useTheme();
 
   const handleCreateLabel = () => {
     if (!newLabelName.trim()) {
@@ -32,7 +34,13 @@ const LabelCreate = ({
   return (
     <>
       <Modal
-        title="Create New Label"
+        title={
+          <span
+            className={theme === "dark" ? "text-gray-100" : "text-gray-800"}
+          >
+            Create New Label
+          </span>
+        }
         open={isNewLabelModalVisible}
         onOk={handleCreateLabel}
         onCancel={() => {
@@ -42,20 +50,34 @@ const LabelCreate = ({
         }}
         okText="Create"
         cancelText="Cancel"
+        className={theme === "dark" ? "dark-modal" : ""}
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              className={`block text-sm font-medium mb-1 ${
+                theme === "dark" ? "text-gray-300" : "text-gray-700"
+              }`}
+            >
               Label Name
             </label>
             <Input
               value={newLabelName}
               onChange={(e) => setNewLabelName(e.target.value)}
               placeholder="Enter label name"
+              className={
+                theme === "dark"
+                  ? "bg-gray-700 border-gray-600 text-gray-100"
+                  : ""
+              }
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              className={`block text-sm font-medium mb-1 ${
+                theme === "dark" ? "text-gray-300" : "text-gray-700"
+              }`}
+            >
               Color
             </label>
             <div className="flex flex-wrap gap-2 items-center">

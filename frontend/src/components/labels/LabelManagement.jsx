@@ -9,11 +9,13 @@ import {
   EllipsisOutlined,
 } from "@ant-design/icons";
 import { useLabel } from "../../contexts/LabelsContext";
+import { useTheme } from "../../contexts/ThemeContext";
 import LabelCreate from "./LabelCreate";
 import LabelEdit from "./LabelEdit";
 import LabelDelete from "./LabelDelete";
 
 const LabelManagement = ({ isCollapsed, isMobile, setCollapsed, navigate }) => {
+  const { theme } = useTheme();
   const {
     selectedLabel,
     setSelectedLabel,
@@ -70,7 +72,11 @@ const LabelManagement = ({ isCollapsed, isMobile, setCollapsed, navigate }) => {
             className="flex items-center justify-between px-2 mb-2 cursor-pointer"
             onClick={toggleLabelsCollapsed}
           >
-            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            <h2
+              className={`text-xs font-semibold uppercase tracking-wider ${
+                theme === "dark" ? "text-gray-400" : "text-gray-500"
+              }`}
+            >
               Labels
             </h2>
             <Button
@@ -83,6 +89,7 @@ const LabelManagement = ({ isCollapsed, isMobile, setCollapsed, navigate }) => {
                 )
               }
               size="small"
+              className={theme === "dark" ? "text-gray-400" : "text-gray-500"}
             />
           </div>
         )}
@@ -100,9 +107,13 @@ const LabelManagement = ({ isCollapsed, isMobile, setCollapsed, navigate }) => {
                 placement="right"
               >
                 <div
-                  className={`flex items-center justify-between px-2 py-2 rounded-md cursor-pointer  ${
+                  className={`flex items-center justify-between px-2 py-2 rounded-md cursor-pointer ${
                     selectedLabel === label.name
-                      ? "bg-blue-50 text-blue-600"
+                      ? theme === "dark"
+                        ? "bg-blue-900/50 text-blue-400"
+                        : "bg-blue-50 text-blue-600"
+                      : theme === "dark"
+                      ? "hover:bg-gray-700 text-gray-300"
                       : "hover:bg-gray-100 text-gray-700"
                   }`}
                   onClick={() => {
@@ -139,6 +150,11 @@ const LabelManagement = ({ isCollapsed, isMobile, setCollapsed, navigate }) => {
                             size="small"
                             onClick={(e) => e.stopPropagation()}
                             aria-label="More options"
+                            className={
+                              theme === "dark"
+                                ? "text-gray-400"
+                                : "text-gray-500"
+                            }
                           />
                         </Dropdown>
                       </Tooltip>
@@ -150,7 +166,11 @@ const LabelManagement = ({ isCollapsed, isMobile, setCollapsed, navigate }) => {
 
             {!isCollapsed && (
               <div
-                className="flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer hover:bg-gray-100 text-gray-500 mt-1"
+                className={`flex items-center gap-2 px-2 py-2 rounded-md cursor-pointer mt-1 ${
+                  theme === "dark"
+                    ? "hover:bg-gray-700 text-gray-400"
+                    : "hover:bg-gray-100 text-gray-500"
+                }`}
                 onClick={() => setIsNewLabelModalVisible(true)}
               >
                 <PlusOutlined className="text-xs" />

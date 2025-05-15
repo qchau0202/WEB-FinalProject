@@ -8,10 +8,12 @@ import { useNavigate } from "react-router-dom";
 import notificationsData from "../mock-data/notifications";
 import NotePinnedSection from "../components/notes/NotePinnedSection";
 import FunctionBar from "../components/common/FunctionBar";
+import { useTheme } from "../contexts/ThemeContext";
 
 const Home = () => {
   const navigate = useNavigate();
   const { selectedLabel } = useLabel();
+  const { theme } = useTheme();
   const {
     notes,
     addNote,
@@ -64,10 +66,20 @@ const Home = () => {
   };
 
   return (
-    <div className="overflow-y-auto h-full">
+    <div
+      className={`overflow-y-auto h-full  ${
+        theme === "dark"
+          ? "bg-gray-900 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-gray-800 [&::-webkit-scrollbar-thumb]:bg-gray-700 [&::-webkit-scrollbar-thumb]:rounded-full"
+          : "bg-gray-50 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full"
+      }`}
+    >
       <div className="p-4 md:p-6 lg:p-8 mx-auto">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800 truncate">
+          <h1
+            className={`text-2xl md:text-3xl font-bold truncate ${
+              theme === "dark" ? "text-gray-100" : "text-gray-800"
+            }`}
+          >
             {getLabelName()}
           </h1>
           <FunctionBar

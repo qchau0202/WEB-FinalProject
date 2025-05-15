@@ -8,10 +8,12 @@ import NoteLockModal from "./NoteLockModal";
 import { LockOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import { Button } from "antd";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const LockedNoteView = ({ note, isDetailView, viewMode }) => {
   const { setShowLockModal } = useNote();
   const navigate = useNavigate();
+  const { theme } = useTheme();
 
   const handleUnlockClick = (e) => {
     e.stopPropagation();
@@ -25,7 +27,7 @@ const LockedNoteView = ({ note, isDetailView, viewMode }) => {
 
   if (isDetailView) {
     return (
-      <div className="flex items-center justify-center ">
+      <div className="flex items-center justify-center">
         <div className="relative p-10 w-full flex flex-col items-center">
           <Button
             icon={<ArrowLeftOutlined />}
@@ -36,10 +38,18 @@ const LockedNoteView = ({ note, isDetailView, viewMode }) => {
           >
             Back to Home
           </Button>
-          <h3 className="text-3xl font-semibold text-gray-700 mb-4 mt-2 text-center">
+          <h3
+            className={`text-3xl font-semibold mb-4 mt-2 text-center ${
+              theme === "dark" ? "text-gray-100" : "text-gray-700"
+            }`}
+          >
             {note.title || "Untitled"}
           </h3>
-          <p className="text-base text-gray-500 mb-6 text-center">
+          <p
+            className={`text-base mb-6 text-center ${
+              theme === "dark" ? "text-gray-400" : "text-gray-500"
+            }`}
+          >
             This note is locked
           </p>
           <Button
@@ -59,10 +69,20 @@ const LockedNoteView = ({ note, isDetailView, viewMode }) => {
     return (
       <div className="flex-1 flex flex-row items-center justify-between p-4">
         <div className="flex items-center">
-          <h3 className="text-lg font-medium text-gray-700">
+          <h3
+            className={`text-lg font-medium ${
+              theme === "dark" ? "text-gray-100" : "text-gray-700"
+            }`}
+          >
             {note.title || "Untitled"}
           </h3>
-          <span className="ml-4 text-sm text-gray-500">(Locked)</span>
+          <span
+            className={`ml-4 text-sm ${
+              theme === "dark" ? "text-gray-400" : "text-gray-500"
+            }`}
+          >
+            (Locked)
+          </span>
         </div>
         <Button
           icon={<LockOutlined />}
@@ -78,10 +98,20 @@ const LockedNoteView = ({ note, isDetailView, viewMode }) => {
   // Grid view (default)
   return (
     <div className="flex-1 flex flex-col items-center justify-center">
-      <h3 className="text-2xl font-medium text-gray-700 mb-1">
+      <h3
+        className={`text-2xl font-medium mb-1 ${
+          theme === "dark" ? "text-gray-100" : "text-gray-700"
+        }`}
+      >
         {note.title || "Untitled"}
       </h3>
-      <p className="text-sm text-gray-500 py-2">This note is locked</p>
+      <p
+        className={`text-sm py-2 ${
+          theme === "dark" ? "text-gray-400" : "text-gray-500"
+        }`}
+      >
+        This note is locked
+      </p>
       <Button icon={<LockOutlined />} type="dashed" onClick={handleUnlockClick}>
         Unlock Note
       </Button>
@@ -98,6 +128,7 @@ const Note = ({
   isDetailView = false,
 }) => {
   const noteContext = useNote();
+  const { theme } = useTheme();
 
   const handleLock = (noteId, password) => {
     onLock(noteId, password);
@@ -121,13 +152,17 @@ const Note = ({
       isDetailView={isDetailView}
     >
       <div
-        className={`bg-white rounded-lg shadow-sm border border-gray-100 transition-all relative ${
+        className={`rounded-lg shadow-sm transition-all relative ${
           isDetailView
             ? "max-w-5xl mx-auto w-full"
             : viewMode === "grid"
             ? "w-full hover:shadow-md"
             : "w-full hover:shadow-md"
-        } flex flex-col`}
+        } flex flex-col ${
+          theme === "dark"
+            ? "bg-gray-800 border-gray-700"
+            : "bg-white border-gray-100"
+        } border`}
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => noteContext?.handleDrop(e)}
         onClick={handleNoteClick}
@@ -136,8 +171,12 @@ const Note = ({
             ? "auto"
             : viewMode === "grid"
             ? "220px"
+            : "auto",
+          height: isDetailView
+            ? "auto"
+            : viewMode === "list"
+            ? "auto"
             : undefined,
-          height: isDetailView ? "auto" : undefined,
           maxWidth: "100%",
         }}
       >

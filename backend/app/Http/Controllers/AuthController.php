@@ -3,50 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\PasswordReset;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use App\Mail\VerificationEmail;
+use App\Mail\PasswordResetEmail;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log; // Add this import
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
-    // public function register(Request $request)
-    // {
-    //     $validator = Validator::make($request->all(), [
-    //         'name' => 'required|string|max:255',
-    //         'email' => 'required|string|email|max:255|unique:users',
-    //         'password' => 'required|string|min:8|confirmed',
-    //     ]);
-
-    //     if ($validator->fails()) {
-    //         return response()->json(['errors' => $validator->errors()], 422);
-    //     }
-
-    //     $user = User::create([
-    //         'name' => $request->name,
-    //         'email' => $request->email,
-    //         'password' => Hash::make($request->password),
-    //         'verification_token' => Str::random(60), // Generate token for later use
-    //         'email_verified_at' => null, // Default to null on registration
-    //     ]);
-
-    //     $token = $user->createToken('auth_token')->plainTextToken;
-
-    //     // Add is_verified based on email_verified_at
-    //     $isVerified = $user->email_verified_at !== null;
-
-    //     return response()->json([
-    //         'message' => 'User registered successfully. Please request a verification email to activate your account.',
-    //         'user' => $user,
-    //         'token' => $token,
-    //         'is_verified' => $isVerified, // Add this field
-    //         'activation_url' => url("/api/activate/{$user->verification_token}"), // Provided for frontend reference
-    //     ], 201);
-    // }
-
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -63,26 +33,30 @@ class AuthController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'avatar' => null,
             'verification_token' => Str::random(60),
             'email_verified_at' => null,
         ]);
+
+        $activationUrl = url("/activate/{$user->verification_token}");
+        Mail::to($user->email)->send(new VerificationEmail($user, $activationUrl));
 
         Auth::login($user);
         $isVerified = $user->email_verified_at !== null;
 
         return response()->json([
-            'message' => 'User registered successfully. Please request a verification email to activate your account.',
+            'message' => 'User registered successfully. Please check your email to verify your account.',
             'user' => [
-                'id' => $user->id,
+                'uuid' => $user->uuid,
                 'name' => $user->name,
                 'email' => $user->email,
+                'avatar' => $user->avatar,
                 'email_verified_at' => $user->email_verified_at,
-                'verification_token' => $user->verification_token,
                 'created_at' => $user->created_at,
                 'updated_at' => $user->updated_at,
             ],
             'is_verified' => $isVerified,
-            'activation_url' => url("/api/activate/{$user->verification_token}"),
+            'activation_url' => $activationUrl,
         ], 201);
     }
 
@@ -95,7 +69,6 @@ class AuthController extends Controller
         }
 
         if ($user->email_verified_at) {
-            // Send a success email even if already verified
             Mail::to($user->email)->send(new VerificationEmail($user, null, true));
             return response()->json(['message' => 'Account already verified, email sent'], 200);
         }
@@ -104,7 +77,6 @@ class AuthController extends Controller
         $user->verification_token = null;
         $user->save();
 
-        // Send a success email after verification
         Mail::to($user->email)->send(new VerificationEmail($user, null, true));
 
         return response()->json(['message' => 'Account verified successfully, email sent'], 200);
@@ -130,7 +102,15 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Login successful',
-            'user' => $user,
+            'user' => [
+                'uuid' => $user->uuid,
+                'name' => $user->name,
+                'email' => $user->email,
+                'avatar' => $user->avatar,
+                'email_verified_at' => $user->email_verified_at,
+                'created_at' => $user->created_at,
+                'updated_at' => $user->updated_at,
+            ],
             'is_verified' => $isVerified,
         ], 200);
     }
@@ -157,18 +137,15 @@ class AuthController extends Controller
         $user = User::where('email', $request->email)->first();
 
         if ($user->email_verified_at) {
-            // Send a success email if already verified
             Mail::to($user->email)->send(new VerificationEmail($user, null, true));
             return response()->json(['message' => 'Email already verified, success email sent'], 200);
         }
 
-        // Generate or update verification token
         if (!$user->verification_token) {
             $user->verification_token = Str::random(60);
         }
         $user->save();
 
-        // Send verification email
         $activationUrl = url("/activate/{$user->verification_token}");
         Mail::to($user->email)->send(new VerificationEmail($user, $activationUrl));
 
@@ -193,14 +170,140 @@ class AuthController extends Controller
         $user = auth()->user();
         return response()->json([
             'user' => [
-                'id' => $user->id,
+                'uuid' => $user->uuid,
                 'name' => $user->name,
                 'email' => $user->email,
+                'avatar' => $user->avatar,
                 'email_verified_at' => $user->email_verified_at,
                 'created_at' => $user->created_at,
                 'updated_at' => $user->updated_at,
             ],
             'is_verified' => $user->email_verified_at !== null,
         ]);
+    }
+
+    public function requestPasswordReset(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|string|email|exists:users,email',
+            'method' => 'required|in:email,otp',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $user = User::where('email', $request->email)->first();
+        
+        // Delete any existing reset tokens for this user
+        PasswordReset::where('user_uuid', $user->uuid)->delete();
+
+        $reset = PasswordReset::create([
+            'user_uuid' => $user->uuid,
+            'token' => Str::random(60),
+            'otp' => $request->method === 'otp' ? str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT) : null,
+            'expires_at' => now()->addHours(1),
+        ]);
+
+        if ($request->method === 'email') {
+            $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
+            $resetUrl = $frontendUrl . '/reset-password/' . $reset->token;
+            Mail::to($user->email)->send(new PasswordResetEmail($user, $resetUrl));
+            return response()->json([
+                'message' => 'Password reset link has been sent to your email.',
+                'token' => $reset->token
+            ]);
+        } else {
+            Mail::to($user->email)->send(new PasswordResetEmail($user, null, $reset->otp));
+            return response()->json([
+                'message' => 'OTP has been sent to your email.',
+                'token' => $reset->token
+            ]);
+        }
+    }
+
+    public function verifyOtp(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|string|email|exists:users,email',
+            'otp' => 'required|string|size:6',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $user = User::where('email', $request->email)->first();
+        $reset = PasswordReset::where('user_uuid', $user->uuid)
+            ->where('otp', $request->otp)
+            ->where('is_used', false)
+            ->where('expires_at', '>', now())
+            ->first();
+
+        if (!$reset) {
+            return response()->json(['message' => 'Invalid or expired OTP.'], 400);
+        }
+
+        return response()->json([
+            'message' => 'OTP verified successfully.',
+            'token' => $reset->token,
+        ]);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'token' => 'required|string',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $reset = PasswordReset::where('token', $request->token)
+            ->where('is_used', false)
+            ->where('expires_at', '>', now())
+            ->first();
+
+        if (!$reset) {
+            Log::warning('Password reset token invalid or expired', [
+                'provided_token' => $request->token,
+                'existing_tokens' => PasswordReset::pluck('token')->toArray(),
+            ]);
+            return response()->json(['message' => 'Invalid or expired token.'], 400);
+        }
+
+        $user = User::where('uuid', $reset->user_uuid)->first();
+        if (!$user) {
+            Log::error('User not found for password reset', [
+                'user_uuid' => $reset->user_uuid,
+                'token' => $request->token,
+            ]);
+            return response()->json(['message' => 'User not found.'], 404);
+        }
+
+        try {
+            DB::beginTransaction();
+            
+            // Update user password
+            $user->password = Hash::make($request->password);
+            $user->save();
+
+            // Mark reset token as used
+            $reset->is_used = true;
+            $reset->save();
+
+            DB::commit();
+            return response()->json(['message' => 'Password has been reset successfully.']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Password reset failed', [
+                'error' => $e->getMessage(),
+                'user_uuid' => $user->uuid,
+                'token' => $request->token,
+            ]);
+            return response()->json(['message' => 'Failed to reset password. Please try again.'], 500);
+        }
     }
 }

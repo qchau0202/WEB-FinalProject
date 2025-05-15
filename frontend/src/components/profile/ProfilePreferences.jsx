@@ -1,146 +1,202 @@
-import { Form, Select, Switch, notification } from "antd";
+import { Button, Form, Select, Switch, App } from "antd";
 import CustomColorPicker from "../ui/CustomColorPicker";
 import { useState } from "react";
+import { useTheme } from "../../contexts/ThemeContext";
 
-const ProfilePreferences = ({ user }) => {
-    const [showColorPicker, setShowColorPicker] = useState(false);
-    const [newColor, setNewColor] = useState("#3b82f6");
-    const [colorList, setColorList] = useState(
-    user.preferences?.customColors || ["#3b82f6", "#10b981", "#f59e0b"]
-    );
-    const addNewColor = (color) => {
-      if (colorList.length >= 12) {
-        notification.info({
-          message: "Color Limit Reached",
-          description:
-            "You can have a maximum of 12 colors. Please remove some colors before adding new ones.",
-        });
-        return;
-      }
-      if (!colorList.includes(color)) {
-        setColorList([...colorList, color]);
-      }
-      setShowColorPicker(false);
-    };
+const ProfilePreferences = () => {
+  const { notification } = App.useApp();
+  const {
+    theme,
+    fontSize,
+    noteColors,
+    toggleTheme,
+    setFontSize,
+    setNoteColors,
+    currentThemeColors,
+    themeClasses,
+  } = useTheme();
 
-    const removeColor = (colorToRemove) => {
-      setColorList(colorList.filter((color) => color !== colorToRemove));
-    };
-    return (
-      <div>
-        <Form layout="vertical" className="space-y-6 max-w-md">
-          <div>
-            <h3 className="text-lg font-medium text-gray-700 mb-4">
-              Note Preferences
-            </h3>
-            <Form.Item
-              name="fontSize"
-              label="Font Size"
-              initialValue={user.preferences?.fontSize || "medium"}
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [newColor, setNewColor] = useState(currentThemeColors.primary[500]);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const addNewColor = (color) => {
+    if (noteColors.length >= 12) {
+      notification.info({
+        message: "Color Limit Reached",
+        description:
+          "You can have a maximum of 12 colors. Please remove some colors before adding new ones.",
+      });
+      return;
+    }
+    if (!noteColors.includes(color)) {
+      setNoteColors([...noteColors, color]);
+    }
+    setShowColorPicker(false);
+  };
+
+  const removeColor = (colorToRemove) => {
+    setNoteColors(noteColors.filter((color) => color !== colorToRemove));
+  };
+
+  const handleSavePreferences = async () => {
+    setIsSaving(true);
+    try {
+      // Simulate API call or any async operation
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      notification.success({
+        message: "Preferences Saved",
+        description: "Your preferences have been saved successfully.",
+      });
+    } catch {
+      notification.error({
+        message: "Save Failed",
+        description: "Failed to save preferences. Please try again.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleResetToDefault = () => {
+    setNoteColors([currentThemeColors.primary[500]]);
+    setFontSize("medium");
+    notification.success({
+      message: "Preferences Reset",
+      description: "Your preferences have been reset to default values.",
+    });
+  };
+
+  return (
+    <div>
+      <Form layout="vertical" className="space-y-6 max-w-md">
+        <div>
+          <h3
+            className={`text-lg font-medium mb-4 ${themeClasses.text.primary}`}
+          >
+            Note Preferences
+          </h3>
+          <Form.Item
+            name="fontSize"
+            label={
+              <span className={themeClasses.text.secondary}>Font Size</span>
+            }
+            initialValue={fontSize}
+          >
+            <Select
+              className="rounded-lg"
+              value={fontSize}
+              onChange={setFontSize}
             >
-              <Select className="rounded-md">
-                <Select.Option value="small">Small</Select.Option>
-                <Select.Option value="medium">Medium</Select.Option>
-                <Select.Option value="large">Large</Select.Option>
-              </Select>
-            </Form.Item>
+              <Select.Option value="small">Small</Select.Option>
+              <Select.Option value="medium">Medium</Select.Option>
+              <Select.Option value="large">Large</Select.Option>
+            </Select>
+          </Form.Item>
 
-            <Form.Item name="noteColors" label="Note Colors">
-              <div className="flex flex-wrap items-center gap-3 mb-2 py-2">
-                {colorList.map((color, index) => (
-                  <div key={index} className="relative group">
-                    <div
-                      role="button"
-                      aria-label={`Select color ${color}`}
-                      tabIndex={0}
-                      className={`w-10 h-10 rounded-full border shadow-sm hover:scale-110 transition-transform cursor-pointer ${
-                        color === newColor
-                          ? "ring-2 ring-offset-2 ring-blue-500"
-                          : "border-gray-200"
-                      }`}
-                      style={{ backgroundColor: color }}
-                      onClick={() => setNewColor(color)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          setNewColor(color);
-                        }
-                      }}
-                    />
-                    <button
-                      aria-label={`Remove color ${color}`}
-                      className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs"
-                      onClick={() => removeColor(color)}
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-                {/* Add new color button or color picker */}
-                {showColorPicker ? (
-                  <CustomColorPicker
-                    value={newColor}
-                    onChange={setNewColor}
-                    onAdd={addNewColor}
-                    onCancel={() => setShowColorPicker(false)}
-                    openByDefault
+          <Form.Item
+            name="theme"
+            label={<span className={themeClasses.text.secondary}>Theme</span>}
+          >
+            <div className="flex items-center gap-3">
+              <span className={`text-sm ${themeClasses.text.light}`}>
+                Light
+              </span>
+              <Switch
+                checked={theme === "dark"}
+                onChange={toggleTheme}
+                checkedChildren="Dark"
+                unCheckedChildren="Light"
+              />
+              <span className={`text-sm ${themeClasses.text.light}`}>Dark</span>
+            </div>
+          </Form.Item>
+
+          <Form.Item
+            name="noteColors"
+            label={
+              <span className={themeClasses.text.secondary}>Note Colors</span>
+            }
+          >
+            <div className="flex flex-wrap items-center gap-3 mb-2 py-2">
+              {noteColors.map((color, index) => (
+                <div key={index} className="relative group">
+                  <div
+                    role="button"
+                    aria-label={`Select color ${color}`}
+                    tabIndex={0}
+                    className={`w-10 h-10 rounded-full border shadow-sm hover:scale-110 transition-transform cursor-pointer ${
+                      color === newColor
+                        ? "ring-2 ring-offset-2 ring-blue-500"
+                        : themeClasses.border.secondary
+                    }`}
+                    style={{ backgroundColor: color }}
+                    onClick={() => setNewColor(color)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        setNewColor(color);
+                      }
+                    }}
                   />
-                ) : (
                   <button
-                    type="button"
-                    aria-label="Add new color"
-                    className="w-10 h-10 rounded-full bg-white border border-gray-300 flex items-center justify-center hover:bg-gray-100 transition-colors"
-                    onClick={() => setShowColorPicker(true)}
+                    aria-label={`Remove color ${color}`}
+                    className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs"
+                    onClick={() => removeColor(color)}
                   >
-                    <span className="text-gray-500 text-xl">+</span>
+                    ×
                   </button>
-                )}
-              </div>
-              <p className="text-xs text-gray-500 mt-1">
-                {colorList.length}/12 colors used
-                {colorList.length >= 10 && (
-                  <span className="text-yellow-600">
-                    {" "}
-                    (Only {12 - colorList.length} more can be added)
-                  </span>
-                )}
-              </p>
-            </Form.Item>
-
-            <Form.Item
-              name="theme"
-              label="Theme"
-              valuePropName="checked"
-              initialValue={user.preferences?.theme === "dark"}
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-600">Light</span>
-                <Switch
-                  defaultChecked={user.preferences?.theme === "dark"}
-                  onChange={(checked) => {
-                    // Form will handle the value
-                  }}
+                </div>
+              ))}
+              {showColorPicker ? (
+                <CustomColorPicker
+                  value={newColor}
+                  onChange={setNewColor}
+                  onAdd={addNewColor}
+                  onCancel={() => setShowColorPicker(false)}
+                  openByDefault
                 />
-                <span className="text-sm text-gray-600">Dark</span>
-              </div>
-            </Form.Item>
-          </div>
-          <div className="pt-6 border-t border-gray-200">
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 mr-2">
-              Save Preferences
-            </button>
-            <button
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-              onClick={() => {
-                setColorList(["#3b82f6", "#10b981", "#f59e0b"]);
-                // Reset other form fields
-              }}
-            >
-              Reset to Default
-            </button>
-          </div>
-        </Form>
-      </div>
-    );
-}
+              ) : (
+                <button
+                  type="button"
+                  aria-label="Add new color"
+                  className={`w-10 h-10 rounded-full ${
+                    theme === "dark"
+                      ? "bg-gray-700 border-gray-600"
+                      : "bg-white border-gray-300"
+                  } border flex items-center justify-center hover:bg-gray-100 transition-colors`}
+                  onClick={() => setShowColorPicker(true)}
+                >
+                  <span className={themeClasses.text.light}>+</span>
+                </button>
+              )}
+            </div>
+            <p className={`text-xs ${themeClasses.text.muted} mt-1`}>
+              {noteColors.length}/12 colors used
+              {noteColors.length >= 10 && (
+                <span className="text-yellow-600">
+                  {" "}
+                  (Only {12 - noteColors.length} more can be added)
+                </span>
+              )}
+            </p>
+          </Form.Item>
+        </div>
+
+        <div
+          className={`flex gap-2 pt-6 border-t ${themeClasses.border.primary}`}
+        >
+          <Button
+            type="primary"
+            onClick={handleSavePreferences}
+            loading={isSaving}
+          >
+            Save Preferences
+          </Button>
+          <Button onClick={handleResetToDefault}>Reset to Default</Button>
+        </div>
+      </Form>
+    </div>
+  );
+};
 
 export default ProfilePreferences;

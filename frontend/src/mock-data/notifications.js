@@ -2,8 +2,8 @@ const notifications = [
   {
     id: 2,
     type: "activation-success",
-    title: "Account Activated",
-    message: "Your account has been successfully activated!",
+    title: "Account Verified",
+    message: "Your account has been successfully verified!",
     status: "success",
     timestamp: "2025-05-10",
   },
@@ -55,14 +55,6 @@ const notifications = [
     title: "Invitation Declined",
     message: "You declined an invitation from Bob to collaborate.",
     status: "error",
-    timestamp: "2025-05-10",
-  },
-  {
-    id: 9,
-    type: "delete-success",
-    title: "Note Deleted",
-    message: "Your note 'Old Meeting Notes' was deleted successfully.",
-    status: "success",
     timestamp: "2025-05-10",
   },
 ];

@@ -26,6 +26,9 @@ class VerifyCsrfToken extends Middleware
         '/register',
         '/logout',
         '/user',
+        '/reset-password',
+        '/request-password-reset',
+        '/verify-otp',
         '/csrf-token',
     ];
 }

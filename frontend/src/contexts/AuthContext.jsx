@@ -28,8 +28,8 @@ export const AuthProvider = ({ children }) => {
   // Fetch user info from backend
   const fetchUser = async () => {
     try {
-      const user = await authService.getCurrentUser();
-      setCurrentUser(user);
+      const response = await authService.getCurrentUser();
+      setCurrentUser(response.user);
     } catch {
       setCurrentUser(null);
     } finally {
