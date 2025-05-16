@@ -5,7 +5,7 @@ import React, {
   useEffect,
   useRef,
 } from "react";
-import { authService } from "../services/api";
+import { authService } from "../services/authService";
 
 const defaultAuthContextValue = {
   currentUser: null,
@@ -41,25 +41,6 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     fetchUser();
   }, []);
-
-  useEffect(() => {
-    if (currentUser && !currentUser.email_verified_at) {
-      // Start polling every 5 seconds
-      pollingRef.current = setInterval(() => {
-        fetchUser();
-      }, 5000);
-    } else if (pollingRef.current) {
-      // Stop polling if verified
-      clearInterval(pollingRef.current);
-      pollingRef.current = null;
-    }
-    return () => {
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      }
-    };
-  }, [currentUser]);
 
   const login = async (credentials) => {
     try {

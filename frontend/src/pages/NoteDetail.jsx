@@ -16,7 +16,7 @@ const NoteDetail = () => {
 
   useEffect(() => {
     setTimeout(() => {
-      const foundNote = notes.find((note) => note.id.toString() === id);
+      const foundNote = notes.find((note) => note.uuid.toString() === id);
       setNote(foundNote);
       setLoading(false);
     }, 300);

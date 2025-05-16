@@ -23,7 +23,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
   const location = useLocation();
   const { currentUser, logout, isAuthenticated } = useAuth();
   const { selectedLabel, setSelectedLabel } = useLabel();
-  const { theme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [isMobile, setIsMobile] = useState(false);
   const [localCollapsed, setLocalCollapsed] = useState(false);
   const [showVerification, setShowVerification] = useState(() => {
@@ -64,6 +64,13 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
 
   const handleLogout = async () => {
     await logout();
+    // Remove all theme-* keys from localStorage
+    Object.keys(localStorage)
+      .filter((key) => key.startsWith("theme-"))
+      .forEach((key) => localStorage.removeItem(key));
+    // Remove notes cache
+    localStorage.removeItem("notelit-notes-cache");
+    setTheme("light");
     toast.success("Logged out successfully");
     navigate("/login");
   };

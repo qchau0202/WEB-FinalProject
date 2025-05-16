@@ -4,12 +4,17 @@ import {
   DeleteOutlined,
   ExpandOutlined,
   EllipsisOutlined,
+  LockOutlined,
   UnlockOutlined,
+  CheckCircleFilled,
 } from "@ant-design/icons";
 import { AiOutlineUsergroupAdd } from "react-icons/ai";
-import { Button, Dropdown, Tooltip } from "antd";
+import { CgSpinner } from "react-icons/cg";
+import { Button, Dropdown, Tooltip, Spin } from "antd";
 import { useNote } from "../../contexts/NotesContext";
 import { useTheme } from "../../contexts/ThemeContext";
+import { useRef, useState, useEffect } from "react";
+import { noteService } from "../../services/noteService";
 
 const formatDate = (dateString) => {
   if (!dateString) return "";
@@ -29,29 +34,82 @@ const NoteHeader = () => {
     handleInput,
     handlePin,
     setShowLockModal,
-    handleLockConfirm,
+    setLockAction,
+    onLockStateChange,
   } = useNote();
-  const { theme } = useTheme();
+  const { theme, fontSize, getTitleFontSizeClass, themeClasses } = useTheme();
 
-  const handleLockClick = (e) => {
-    e.stopPropagation();
-    if (note.lockStatus?.password && !note.lockStatus?.isLocked) {
-      // Directly lock the note if password exists and note is not locked
-      handleLockConfirm(note.lockStatus.password, true, true);
-    } else {
-      // Show modal for setting password or unlocking
-      setShowLockModal(true);
+  const titleFontSizeClass = getTitleFontSizeClass(fontSize);
+
+  // Saving state for visual feedback
+  const [isSaving, setIsSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
+  const saveTimeout = useRef();
+
+  // Listen for note changes and show saving feedback
+  useEffect(() => {
+    if (note._isSaving) {
+      setIsSaving(true);
+      setJustSaved(false);
+    } else if (isSaving) {
+      setIsSaving(false);
+      setJustSaved(true);
+      clearTimeout(saveTimeout.current);
+      saveTimeout.current = setTimeout(() => setJustSaved(false), 1200);
+    }
+  }, [note._isSaving]);
+
+  const handleEnableLock = async (e) => {
+    e.domEvent?.stopPropagation();
+    try {
+      const response = await noteService.enableLockFeature(note.uuid);
+      // message.success("Lock feature enabled successfully");
+      onLockStateChange?.(response.note);
+    } catch (error) {
+      console.error("Failed to enable lock feature:", error);
+      // message.error("Failed to enable lock feature");
     }
   };
 
-  const handleEnableLock = (e) => {
-    e.domEvent?.stopPropagation();
-    handleLockConfirm(null, true, false); // Enable feature without locking
+  const handleLockClick = (e) => {
+    e.stopPropagation();
+    if (note.lock_feature_enabled) {
+      if (!note.is_locked) {
+        // If password is already set, lock immediately
+        if (note.password) {
+          noteService.lockNote(note.uuid, note.password).then((response) => {
+            onLockStateChange?.(response.note);
+          });
+        } else {
+          // Show modal to set password
+          setLockAction("enable");
+          setShowLockModal(true);
+        }
+      } else {
+        // Show modal to unlock
+        setLockAction("unlock");
+        setShowLockModal(true);
+      }
+    }
   };
 
-  const handleDisableLock = (e) => {
+  const handleDisableLock = async (e) => {
     e.domEvent?.stopPropagation();
-    setShowLockModal(true); // Show modal for disabling
+    try {
+      if (!note.password) {
+        // No password set, disable lock feature immediately
+        const response = await noteService.disableLockFeature(note.uuid);
+        // message.success("Lock feature disabled successfully");
+        onLockStateChange?.(response.note);
+      } else {
+        // Password is set, show modal to confirm password
+        setLockAction("disable");
+        setShowLockModal(true);
+      }
+    } catch (error) {
+      console.error("Failed to disable lock feature:", error);
+      // message.error("Failed to disable lock feature");
+    }
   };
 
   const menu = {
@@ -59,10 +117,10 @@ const NoteHeader = () => {
       ? [
           {
             key: "lock",
-            label: note.lockFeatureEnabled
+            label: note.lock_feature_enabled
               ? "Disable Lock Feature"
               : "Enable Lock Feature",
-            onClick: note.lockFeatureEnabled
+            onClick: note.lock_feature_enabled
               ? handleDisableLock
               : handleEnableLock,
           },
@@ -83,10 +141,10 @@ const NoteHeader = () => {
           },
           {
             key: "lock",
-            label: note.lockFeatureEnabled
+            label: note.lock_feature_enabled
               ? "Disable Lock Feature"
               : "Enable Lock Feature",
-            onClick: note.lockFeatureEnabled
+            onClick: note.lock_feature_enabled
               ? handleDisableLock
               : handleEnableLock,
           },
@@ -107,12 +165,16 @@ const NoteHeader = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Button
-                  icon={<ArrowLeftOutlined />}
+                  icon={
+                    <div className={themeClasses.font[fontSize]}>
+                      <ArrowLeftOutlined />
+                    </div>
+                  }
                   type="text"
                   onClick={() => navigate("/")}
                   className={`text-lg ${
                     theme === "dark" ? "text-gray-200" : "text-gray-600"
-                  }`}
+                  } ${themeClasses.font[fontSize]}`}
                 />
                 <div
                   className={`text-base ${
@@ -140,56 +202,80 @@ const NoteHeader = () => {
                 </div>
               </div>
               <div className="flex gap-2">
-                <Tooltip title={note.isPinned ? "Unpin" : "Pin"}>
+                <Tooltip
+                  title={note.is_pinned ? "Unpin" : "Pin"}
+                  className={themeClasses.font[fontSize]}
+                >
                   <Button
-                    icon={<PushpinOutlined />}
-                    type={note.isPinned ? "primary" : "default"}
+                    icon={
+                      <div className={themeClasses.font[fontSize]}>
+                        <PushpinOutlined />
+                      </div>
+                    }
+                    type={note.is_pinned ? "primary" : "default"}
                     onClick={(e) => {
                       e.stopPropagation();
                       handlePin();
                     }}
                     className={`text-lg ${
                       theme === "dark" ? "text-gray-200" : "text-gray-600"
-                    }`}
+                    } ${themeClasses.font[fontSize]}`}
                   />
                 </Tooltip>
-                {note.lockFeatureEnabled && (
+                {note.lock_feature_enabled && (
                   <Tooltip
-                    title={
-                      note.lockStatus?.isLocked ? "Unlock Note" : "Lock Note"
-                    }
+                    title={note.is_locked ? "Unlock Note" : "Lock Note"}
+                    className={themeClasses.font[fontSize]}
                   >
                     <Button
                       className={`rounded-full ${
                         theme === "dark"
                           ? "hover:bg-gray-700"
                           : "hover:bg-gray-100"
-                      } cursor-pointer text-blue-400`}
+                      } cursor-pointer text-blue-400 ${
+                        themeClasses.font[fontSize]
+                      }`}
                       onClick={handleLockClick}
-                      icon={<UnlockOutlined />}
+                      icon={
+                        <div className={themeClasses.font[fontSize]}>
+                          {note.is_locked ? (
+                            <UnlockOutlined />
+                          ) : (
+                            <LockOutlined />
+                          )}
+                        </div>
+                      }
                     />
                   </Tooltip>
                 )}
-                <Tooltip title="Invite">
+                <Tooltip title="Invite" className={themeClasses.font[fontSize]}>
                   <Button
-                    icon={<AiOutlineUsergroupAdd />}
+                    icon={
+                      <div className={themeClasses.font[fontSize]}>
+                        <AiOutlineUsergroupAdd />
+                      </div>
+                    }
                     className={`text-lg ${
                       theme === "dark" ? "text-gray-200" : "text-gray-600"
-                    }`}
+                    } ${themeClasses.font[fontSize]}`}
                   />
                 </Tooltip>
 
-                <Tooltip title="Delete">
+                <Tooltip title="Delete" className={themeClasses.font[fontSize]}>
                   <Button
-                    icon={<DeleteOutlined />}
+                    icon={
+                      <div className={themeClasses.font[fontSize]}>
+                        <DeleteOutlined />
+                      </div>
+                    }
                     danger
                     onClick={() => setConfirmDelete(true)}
                   />
                 </Tooltip>
 
-                <Tooltip title="More">
+                <Tooltip title="More" className={themeClasses.font[fontSize]}>
                   <Dropdown
-                    menu={menu}
+                    menu={{ ...menu, className: themeClasses.font[fontSize] }}
                     trigger={["click"]}
                     placement="bottomRight"
                   >
@@ -198,7 +284,7 @@ const NoteHeader = () => {
                         theme === "dark"
                           ? "hover:bg-gray-700 text-white"
                           : "hover:bg-gray-100"
-                      }`}
+                      } ${themeClasses.font[fontSize]}`}
                       onClick={(e) => e.stopPropagation()}
                     >
                       <EllipsisOutlined className="text-lg" />
@@ -219,9 +305,9 @@ const NoteHeader = () => {
               setTitle(e.target.value);
               handleInput(e.target.value, content);
             }}
-            className={`font-medium bg-transparent border-none focus:outline-none w-full ${
-              isDetailView ? "text-2xl" : "text-xl"
-            } ${theme === "dark" ? "text-gray-100" : "text-gray-900"}`}
+            className={`font-medium bg-transparent border-none focus:outline-none w-full ${titleFontSizeClass} ${
+              theme === "dark" ? "text-gray-100" : "text-gray-900"
+            }`}
             placeholder="Title"
             onClick={(e) => e.stopPropagation()}
             style={{
@@ -234,73 +320,104 @@ const NoteHeader = () => {
           <div
             className={`text-sm mt-1 ${
               theme === "dark" ? "text-gray-400" : "text-gray-500"
-            }`}
+            } flex items-center gap-2`}
           >
-            {note.updatedAt && note.updatedAt !== note.createdAt ? (
-              <>Updated: {formatDate(note.updatedAt)}</>
+            {note.updated_at && note.updated_at !== note.created_at ? (
+              <>
+                Updated: {formatDate(note.updated_at)}
+                {isSaving ? (
+                  <Spin indicator={<CgSpinner spin="true" />} size="small" />
+                ) : justSaved ? (
+                  <div className="text-green-500">
+                    <CheckCircleFilled />
+                  </div>
+                ) : null}
+              </>
             ) : (
-              <>Created: {formatDate(note.createdAt)}</>
+              <>
+                Created: {formatDate(note.created_at)}
+                {isSaving ? (
+                  <Spin indicator={<CgSpinner spin="true" />} size="small" />
+                ) : justSaved ? (
+                  <div className="text-green-500">
+                    <CheckCircleFilled />
+                  </div>
+                ) : null}
+              </>
             )}
           </div>
         </div>
         {!isDetailView && (
           <div className="flex items-center gap-2 relative z-10">
-            <Tooltip title={note.isPinned ? "Unpin" : "Pin"}>
+            <Tooltip
+              title={note.is_pinned ? "Unpin" : "Pin"}
+              className={themeClasses.font[fontSize]}
+            >
               <div
                 className={`p-1 rounded-full ${
                   theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-100"
                 } cursor-pointer ${
-                  note.isPinned
+                  note.is_pinned
                     ? "text-blue-400"
                     : theme === "dark"
                     ? "text-gray-300"
                     : "text-gray-500"
-                }`}
+                } ${themeClasses.font[fontSize]}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   handlePin();
                 }}
               >
-                <PushpinOutlined className="text-lg" />
+                <div className={themeClasses.font[fontSize]}>
+                  <PushpinOutlined />
+                </div>
               </div>
             </Tooltip>
-            {note.lockFeatureEnabled && (
+            {note.lock_feature_enabled && (
               <Tooltip
-                title={note.lockStatus?.isLocked ? "Unlock Note" : "Lock Note"}
+                title={note.is_locked ? "Unlock Note" : "Lock Note"}
+                className={themeClasses.font[fontSize]}
               >
                 <div
                   className={`p-1 rounded-full ${
                     theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-100"
-                  } cursor-pointer text-blue-400`}
+                  } cursor-pointer text-blue-400 ${
+                    themeClasses.font[fontSize]
+                  }`}
                   onClick={handleLockClick}
                 >
-                  <UnlockOutlined className="text-lg" />
+                  <div className={themeClasses.font[fontSize]}>
+                    {note.is_locked ?  <LockOutlined />:<UnlockOutlined />}
+                  </div>
                 </div>
               </Tooltip>
             )}
-            <Tooltip title="View Details">
+            <Tooltip
+              title="View Details"
+              className={themeClasses.font[fontSize]}
+            >
               <div
                 className={`p-1 rounded-full ${
                   theme === "dark"
                     ? "hover:bg-gray-700 text-white"
                     : "hover:bg-gray-100"
-                } cursor-pointer `}
+                } cursor-pointer ${themeClasses.font[fontSize]}`}
                 onClick={(e) => {
                   e.stopPropagation();
-                  navigate(`/note/${note.id}`);
+                  navigate(`/note/${note.uuid}`);
                 }}
               >
                 <ExpandOutlined className="text-lg" />
               </div>
             </Tooltip>
-            <Tooltip title="More">
+            <Tooltip title="More" className={themeClasses.font[fontSize]}>
               <Dropdown menu={menu} trigger={["click"]} placement="bottomRight">
                 <div
                   className={`p-1 rounded-full ${
                     theme === "dark"
                       ? "hover:bg-gray-700 text-white"
                       : "hover:bg-gray-100"
-                  }`}
+                  } ${themeClasses.font[fontSize]}`}
                   onClick={(e) => e.stopPropagation()}
                 >
                   <EllipsisOutlined className="text-lg" />

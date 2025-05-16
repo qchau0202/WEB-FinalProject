@@ -1,73 +1,121 @@
 import { Modal, Input } from "antd";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNote } from "../../contexts/NotesContext";
-import toast from "react-hot-toast";
+import { noteService } from "../../services";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const NoteLockModal = () => {
-  const { showLockModal, setShowLockModal, note, handleLockConfirm } =
-    useNote();
+  const {
+    showLockModal,
+    setShowLockModal,
+    note,
+    lockAction,
+    setLockAction,
+    onLockStateChange,
+  } = useNote();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const isSettingPassword =
-    note.lockFeatureEnabled && !note.lockStatus?.password;
-  const isUnlocking = note.lockStatus?.isLocked;
-  const isDisabling =
-    note.lockFeatureEnabled && !isSettingPassword && !isUnlocking;
+  const { themeClasses } = useTheme();
 
-  const handleConfirm = () => {
-    setError("");
-
-    if (isSettingPassword) {
-      // Setting password for the first time
-      if (password.length < 6) {
-        setError("Password must be at least 6 digits");
-        return;
-      }
-      if (password !== confirmPassword) {
-        setError("Passwords do not match");
-        return;
-      }
-      const allNotes = JSON.parse(localStorage.getItem("notes")) || [];
-      if (
-        allNotes.some(
-          (n) =>
-            n.id !== note.id &&
-            n.lockStatus?.isLocked &&
-            n.lockStatus?.password === password
-        )
-      ) {
-        setError("This password is already used by another note");
-        return;
-      }
-      handleLockConfirm(password, true, true);
-      toast.success("Note locked successfully");
-    } else if (isUnlocking) {
-      // Unlocking note
-      if (password !== note.lockStatus?.password) {
-        setError("Incorrect password");
-        return;
-      }
-      handleLockConfirm(note.lockStatus?.password, true, false);
-      toast.success("Note unlocked successfully");
-    } else if (isDisabling) {
-      // Disabling lock feature
-      if (!note.lockStatus?.password) {
-        setError("Incorrect password");
-
-        return;
-      } else if (password !== note.lockStatus?.password) {
-        setError("Wrong password");
-        return;
-      }
-      handleLockConfirm(null, false, false);
-      toast.success("Lock feature disabled");
+  useEffect(() => {
+    if (showLockModal) {
+      setPassword("");
+      setConfirmPassword("");
+      setError("");
+      setLoading(false);
     }
+  }, [showLockModal]);
 
-    setPassword("");
-    setConfirmPassword("");
-    setShowLockModal(false);
+  const isEnable = lockAction === "enable";
+  const isUnlock = lockAction === "unlock";
+  const isDisable = lockAction === "disable";
+
+  const handleConfirm = async () => {
+    setError("");
+    setLoading(true);
+
+    try {
+      if (isEnable) {
+        if (!password) {
+          setError("Password is required");
+          setLoading(false);
+          return;
+        }
+        if (password !== confirmPassword) {
+          setError("Passwords do not match");
+          setLoading(false);
+          return;
+        }
+
+        // Lock the note with the password
+        const response = await noteService.lockNote(note.uuid, password);
+        // message.success("Note locked successfully");
+        // Update local state
+        onLockStateChange?.(response.note);
+      } else if (isUnlock) {
+        if (!password) {
+          setError("Password is required");
+          setLoading(false);
+          return;
+        }
+        // First verify the password
+        const verifyResponse = await noteService.verifyLockPassword(
+          note.uuid,
+          password
+        );
+        if (!verifyResponse.is_valid) {
+          setError("Invalid password");
+          setLoading(false);
+          return;
+        }
+        // Then unlock the note
+        const response = await noteService.unlockNote(note.uuid, password);
+        // message.success("Note unlocked successfully");
+        // Update local state
+        onLockStateChange?.(response.note);
+      } else if (isDisable) {
+        if (!password) {
+          setError("Password is required");
+          setLoading(false);
+          return;
+        }
+        // First verify the password
+        const verifyResponse = await noteService.verifyLockPassword(
+          note.uuid,
+          password
+        );
+        if (!verifyResponse.is_valid) {
+          setError("Invalid password");
+          setLoading(false);
+          return;
+        }
+        // Then disable the lock feature
+        const response = await noteService.disableLockFeature(
+          note.uuid,
+          password
+        );
+        onLockStateChange?.(response.note);
+      }
+
+      // Only close modal and reset state if the operation was successful
+      setPassword("");
+      setConfirmPassword("");
+      setShowLockModal(false);
+      setLockAction(null);
+    } catch (err) {
+      console.error("Lock operation error:", err);
+      const errorMessage =
+        err.response?.data?.errors?.current_password?.[0] ||
+        err.response?.data?.errors?.password?.[0] ||
+        err.response?.data?.message ||
+        "An error occurred while performing the lock operation";
+      setError(errorMessage);
+      // message.error(errorMessage);
+      setLoading(false);
+    }
   };
 
   const handleCancel = () => {
@@ -75,48 +123,64 @@ const NoteLockModal = () => {
     setConfirmPassword("");
     setError("");
     setShowLockModal(false);
+    setLockAction(null);
   };
 
   return (
     <Modal
       title={
-        isSettingPassword
-          ? "Set Password"
-          : isDisabling
+        isEnable
+          ? "Set Initial Password"
+          : isDisable
           ? "Disable Lock Feature"
-          : "Unlock Note"
+          : isUnlock
+          ? "Unlock Note"
+          : "Lock Note"
       }
       open={showLockModal}
       onOk={handleConfirm}
       onCancel={handleCancel}
       okText={
-        isSettingPassword ? "Set and Lock" : isDisabling ? "Disable" : "Unlock"
+        isEnable
+          ? "Set and Lock"
+          : isDisable
+          ? "Disable"
+          : isUnlock
+          ? "Unlock"
+          : "Lock"
       }
       cancelText="Cancel"
+      confirmLoading={loading}
     >
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {isSettingPassword
+          <label
+            className={`block ${themeClasses.font.small} font-medium ${themeClasses.text.secondary} mb-1`}
+          >
+            {isEnable
               ? "Set Password"
-              : isDisabling
+              : isDisable
               ? "Enter Password to Disable"
-              : "Enter Password to Unlock"}
+              : isUnlock
+              ? "Enter Password to Unlock"
+              : "Enter Password"}
           </label>
           <Input.Password
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder={
-              isSettingPassword ? "Enter 6-digit password" : "Enter password"
+              isEnable ? "Enter password (min 6 characters)" : "Enter password"
             }
             minLength={6}
             className="w-full"
+            disabled={loading}
           />
         </div>
-
-        {isSettingPassword && (
+        {isEnable && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              className={`block ${themeClasses.font.small} font-medium ${themeClasses.text.secondary} mb-1`}
+            >
               Confirm Password
             </label>
             <Input.Password
@@ -125,137 +189,16 @@ const NoteLockModal = () => {
               placeholder="Confirm password"
               minLength={6}
               className="w-full"
+              disabled={loading}
             />
           </div>
         )}
-
-        {error && <p className="text-red-500 text-sm">{error}</p>}
+        {error && (
+          <p className={`text-red-500 ${themeClasses.font.small}`}>{error}</p>
+        )}
       </div>
     </Modal>
   );
 };
 
 export default NoteLockModal;
-// import React, { useState } from "react";
-// import { Modal, Input } from "antd";
-// import toast from "react-hot-toast";
-
-// const NoteLockModal = ({ isOpen, onClose, note, onLock }) => {
-//   const [password, setPassword] = useState("");
-//   const [confirmPassword, setConfirmPassword] = useState("");
-//   const [error, setError] = useState("");
-
-//   const isSettingPassword =
-//     note.lockFeatureEnabled && !note.lockStatus?.password;
-//   const isUnlocking = note.lockStatus?.isLocked;
-//   const isDisabling =
-//     note.lockFeatureEnabled && !isSettingPassword && !isUnlocking;
-
-//   const handleConfirm = () => {
-//     setError("");
-
-//     if (isSettingPassword) {
-//       // Setting password for the first time
-//       if (password.length < 6) {
-//         setError("Password must be at least 6 digits");
-//         return;
-//       }
-//       if (password !== confirmPassword) {
-//         setError("Passwords do not match");
-//         return;
-//       }
-//       onLock(password, true, true);
-//       toast.success("Note locked successfully");
-//     } else if (isUnlocking) {
-//       // Unlocking note
-//       if (password !== note.lockStatus?.password) {
-//         setError("Incorrect password");
-//         return;
-//       }
-//       onLock(note.lockStatus?.password, true, false);
-//       toast.success("Note unlocked successfully");
-//     } else if (isDisabling) {
-//       // Disabling lock feature
-//       if (!note.lockStatus?.password) {
-//         setError("Incorrect password");
-//         return;
-//       }
-//       if (password !== note.lockStatus?.password) {
-//         setError("Wrong password");
-//         return;
-//       }
-//       onLock(null, false, false);
-//       toast.success("Lock feature disabled");
-//     }
-
-//     setPassword("");
-//     setConfirmPassword("");
-//     onClose();
-//   };
-
-//   const handleCancel = () => {
-//     setPassword("");
-//     setConfirmPassword("");
-//     setError("");
-//     onClose();
-//   };
-
-//   return (
-//     <Modal
-//       title={
-//         isSettingPassword
-//           ? "Set Password"
-//           : isDisabling
-//           ? "Disable Lock Feature"
-//           : "Unlock Note"
-//       }
-//       open={isOpen}
-//       onOk={handleConfirm}
-//       onCancel={handleCancel}
-//       okText={
-//         isSettingPassword ? "Set and Lock" : isDisabling ? "Disable" : "Unlock"
-//       }
-//       cancelText="Cancel"
-//     >
-//       <div className="space-y-4">
-//         <div>
-//           <label className="block text-sm font-medium text-gray-700 mb-1">
-//             {isSettingPassword
-//               ? "Set Password"
-//               : isDisabling
-//               ? "Enter Password to Disable"
-//               : "Enter Password to Unlock"}
-//           </label>
-//           <Input.Password
-//             value={password}
-//             onChange={(e) => setPassword(e.target.value)}
-//             placeholder={
-//               isSettingPassword ? "Enter 6-digit password" : "Enter password"
-//             }
-//             minLength={6}
-//             className="w-full"
-//           />
-//         </div>
-
-//         {isSettingPassword && (
-//           <div>
-//             <label className="block text-sm font-medium text-gray-700 mb-1">
-//               Confirm Password
-//             </label>
-//             <Input.Password
-//               value={confirmPassword}
-//               onChange={(e) => setConfirmPassword(e.target.value)}
-//               placeholder="Confirm password"
-//               minLength={6}
-//               className="w-full"
-//             />
-//           </div>
-//         )}
-
-//         {error && <p className="text-red-500 text-sm">{error}</p>}
-//       </div>
-//     </Modal>
-//   );
-// };
-
-// export default NoteLockModal;

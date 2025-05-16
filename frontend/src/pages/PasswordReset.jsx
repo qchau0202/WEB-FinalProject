@@ -4,7 +4,7 @@ import { Form, Input } from "antd";
 import toast from "react-hot-toast";
 import background from "/bg.jpg";
 import { LockOutlined } from "@ant-design/icons";
-import { authService } from "../services/api";
+import { authService } from "../services/authService";
 
 const PasswordReset = () => {
   const { token } = useParams();

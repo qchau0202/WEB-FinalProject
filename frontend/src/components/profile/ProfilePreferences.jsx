@@ -1,10 +1,10 @@
-import { Button, Form, Select, Switch, App } from "antd";
+import { Button, Form, Select, Switch } from "antd";
 import CustomColorPicker from "../ui/CustomColorPicker";
 import { useState } from "react";
 import { useTheme } from "../../contexts/ThemeContext";
+import toast from "react-hot-toast";
 
 const ProfilePreferences = () => {
-  const { notification } = App.useApp();
   const {
     theme,
     fontSize,
@@ -19,24 +19,28 @@ const ProfilePreferences = () => {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [newColor, setNewColor] = useState(currentThemeColors.primary[500]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempFontSize, setTempFontSize] = useState(fontSize);
+  const [tempNoteColors, setTempNoteColors] = useState([...noteColors]);
 
   const addNewColor = (color) => {
-    if (noteColors.length >= 12) {
-      notification.info({
-        message: "Color Limit Reached",
-        description:
-          "You can have a maximum of 12 colors. Please remove some colors before adding new ones.",
-      });
+    if (tempNoteColors.length >= 12) {
+      toast(
+        "Color Limit Reached: You can have a maximum of 12 colors. Please remove some colors before adding new ones",
+        { icon: "ℹ️" }
+      );
       return;
     }
-    if (!noteColors.includes(color)) {
-      setNoteColors([...noteColors, color]);
+    if (!tempNoteColors.includes(color)) {
+      setTempNoteColors([...tempNoteColors, color]);
     }
     setShowColorPicker(false);
   };
 
   const removeColor = (colorToRemove) => {
-    setNoteColors(noteColors.filter((color) => color !== colorToRemove));
+    setTempNoteColors(
+      tempNoteColors.filter((color) => color !== colorToRemove)
+    );
   };
 
   const handleSavePreferences = async () => {
@@ -44,27 +48,25 @@ const ProfilePreferences = () => {
     try {
       // Simulate API call or any async operation
       await new Promise((resolve) => setTimeout(resolve, 500));
-      notification.success({
-        message: "Preferences Saved",
-        description: "Your preferences have been saved successfully.",
-      });
+      setFontSize(tempFontSize);
+      setNoteColors(tempNoteColors);
+      setIsEditing(false);
+      toast.success(
+        "Preferences saved"
+      );
     } catch {
-      notification.error({
-        message: "Save Failed",
-        description: "Failed to save preferences. Please try again.",
-      });
+      toast.error("Failed to save preferences. Please try again");
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleResetToDefault = () => {
-    setNoteColors([currentThemeColors.primary[500]]);
-    setFontSize("medium");
-    notification.success({
-      message: "Preferences Reset",
-      description: "Your preferences have been reset to default values.",
-    });
+    setTempFontSize("medium");
+    setTempNoteColors([currentThemeColors.primary[500]]);
+    toast.success(
+      "Preferences have been reset to default"
+    );
   };
 
   return (
@@ -77,16 +79,15 @@ const ProfilePreferences = () => {
             Note Preferences
           </h3>
           <Form.Item
-            name="fontSize"
             label={
               <span className={themeClasses.text.secondary}>Font Size</span>
             }
-            initialValue={fontSize}
           >
             <Select
               className="rounded-lg"
-              value={fontSize}
-              onChange={setFontSize}
+              value={tempFontSize}
+              onChange={setTempFontSize}
+              disabled={!isEditing}
             >
               <Select.Option value="small">Small</Select.Option>
               <Select.Option value="medium">Medium</Select.Option>
@@ -95,7 +96,6 @@ const ProfilePreferences = () => {
           </Form.Item>
 
           <Form.Item
-            name="theme"
             label={<span className={themeClasses.text.secondary}>Theme</span>}
           >
             <div className="flex items-center gap-3">
@@ -113,13 +113,12 @@ const ProfilePreferences = () => {
           </Form.Item>
 
           <Form.Item
-            name="noteColors"
             label={
               <span className={themeClasses.text.secondary}>Note Colors</span>
             }
           >
             <div className="flex flex-wrap items-center gap-3 mb-2 py-2">
-              {noteColors.map((color, index) => (
+              {tempNoteColors.map((color, index) => (
                 <div key={index} className="relative group">
                   <div
                     role="button"
@@ -142,6 +141,7 @@ const ProfilePreferences = () => {
                     aria-label={`Remove color ${color}`}
                     className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs"
                     onClick={() => removeColor(color)}
+                    disabled={!isEditing}
                   >
                     ×
                   </button>
@@ -165,17 +165,18 @@ const ProfilePreferences = () => {
                       : "bg-white border-gray-300"
                   } border flex items-center justify-center hover:bg-gray-100 transition-colors`}
                   onClick={() => setShowColorPicker(true)}
+                  disabled={!isEditing}
                 >
                   <span className={themeClasses.text.light}>+</span>
                 </button>
               )}
             </div>
             <p className={`text-xs ${themeClasses.text.muted} mt-1`}>
-              {noteColors.length}/12 colors used
-              {noteColors.length >= 10 && (
+              {tempNoteColors.length}/12 colors used
+              {tempNoteColors.length >= 10 && (
                 <span className="text-yellow-600">
                   {" "}
-                  (Only {12 - noteColors.length} more can be added)
+                  (Only {12 - tempNoteColors.length} more can be added)
                 </span>
               )}
             </p>
@@ -185,13 +186,20 @@ const ProfilePreferences = () => {
         <div
           className={`flex gap-2 pt-6 border-t ${themeClasses.border.primary}`}
         >
-          <Button
-            type="primary"
-            onClick={handleSavePreferences}
-            loading={isSaving}
-          >
-            Save Preferences
-          </Button>
+          {isEditing ? (
+            <>
+              <Button
+                type="primary"
+                onClick={handleSavePreferences}
+                loading={isSaving}
+              >
+                Save Preferences
+              </Button>
+              <Button onClick={() => setIsEditing(false)}>Cancel</Button>
+            </>
+          ) : (
+            <Button onClick={() => setIsEditing(true)}>Edit Preferences</Button>
+          )}
           <Button onClick={handleResetToDefault}>Reset to Default</Button>
         </div>
       </Form>

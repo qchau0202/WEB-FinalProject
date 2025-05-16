@@ -4,7 +4,7 @@ import { Form, Input, Select } from "antd";
 import toast from "react-hot-toast";
 import background from "/bg.jpg";
 import { MailOutlined } from "@ant-design/icons";
-import { authService } from "../services/api";
+import { authService } from "../services/authService";
 
 const ForgotPassword = () => {
   const navigate = useNavigate();

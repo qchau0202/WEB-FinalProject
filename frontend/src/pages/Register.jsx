@@ -63,7 +63,8 @@ const Register = () => {
       toast.success(
         "Registration successful! Please verify your email to activate your account."
       );
-      navigate("/"); // Navigate to home page
+      navigate("/");
+      window.location.reload();
     } catch (err) {
       if (err.response && err.response.data) {
         if (err.response.status === 422 && err.response.data.errors) {

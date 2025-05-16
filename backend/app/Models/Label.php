@@ -22,7 +22,7 @@ class Label extends Model
 
     public function notes()
     {
-        return $this->belongsToMany(Note::class, 'note_label', 'label_id', 'note_uuid', 'id', 'uuid')
+        return $this->belongsToMany(Note::class, 'note_labels', 'label_id', 'note_uuid', 'id', 'uuid')
             ->withTimestamps();
     }
 } 

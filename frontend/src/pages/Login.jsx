@@ -37,6 +37,7 @@ const Login = () => {
       await login(formData);
       toast.success("Logged in successfully!");
       navigate("/");
+      window.location.reload();
     } catch (err) {
       if (err.response && err.response.data) {
         if (err.response.status === 422 && err.response.data.errors) {

@@ -1,105 +1,119 @@
 import { useState, useEffect } from "react";
-import { notes as initialNotes } from "../mock-data/notes";
+import { noteService } from "../services";
+
+const NOTES_CACHE_KEY = "notelit-notes-cache";
+const AUTOSAVE_DEBOUNCE = 500; // ms
 
 const useNoteManagement = () => {
-  // Initialize notes from localStorage, ensuring pinnedAt exists
+  // Initialize notes from localStorage for instant render
   const [notes, setNotes] = useState(() => {
-    const savedNotes = localStorage.getItem("notes");
-    const parsedNotes = savedNotes ? JSON.parse(savedNotes) : initialNotes;
-    return parsedNotes.map((note) => ({
-      ...note,
-      pinnedAt: note.pinnedAt || null,
-      lockStatus: note.lockStatus || { isLocked: false, password: null },
-    }));
+    const cached = localStorage.getItem(NOTES_CACHE_KEY);
+    return cached ? JSON.parse(cached) : [];
   });
   const [loading] = useState(false);
 
   // Save notes to localStorage whenever they change
   useEffect(() => {
-    console.log("Saving notes to localStorage:", notes); // Debug log
-    localStorage.setItem("notes", JSON.stringify(notes));
+    localStorage.setItem(NOTES_CACHE_KEY, JSON.stringify(notes));
   }, [notes]);
 
-  // const addNote = (note) => {
-  //   // Create a minimal note object with only required fields
-  //   const newNote = {
-  //     id: note.id || Date.now().toString(),
-  //     title: note.title || "New Note",
-  //     content: note.content || "",
-  //     createdAt: new Date().toISOString().split("T")[0], // Only set createdAt
-  //     labels: [], // Initialize empty to avoid undefined
-  //     files: [], // Initialize empty to avoid undefined
-  //     isPinned: false,
-  //     pinnedAt: null,
-  //     order: notes.length,
-  //   };
-  //   setNotes((prevNotes) => [newNote, ...prevNotes]);
-  // };
-
   const addNote = (note) => {
-    if (!note.title?.trim() && !note.content?.trim()) return; // Skip empty notes
-    const newNote = {
-      id: note.id || Date.now().toString(),
-      title: note.title?.trim() || "New Note",
-      content: note.content?.trim() || "",
-      createdAt: new Date().toISOString().split("T")[0],
-      updatedAt: null,
-      labels: [],
-      files: [],
-      isPinned: false,
-      pinnedAt: null,
-      order: 0,
-      lockStatus: { isLocked: false, password: null },
-    };
-    setNotes((prevNotes) => [newNote, ...prevNotes]);
+    if (!note.title?.trim() && !note.content?.trim()) return;
+    setNotes((prevNotes) => [note, ...prevNotes]);
   };
 
-  const updateNote = (updatedNote) => {
-    console.log("Updating note:", updatedNote); // Debug log
-    setNotes((prevNotes) => {
-      const newNotes = prevNotes.map((note) =>
-        note.id === updatedNote.id ? updatedNote : note
-      );
-      console.log("New notes state:", newNotes); // Debug log
-      return newNotes;
-    });
-  };
-
-  const deleteNote = (noteId) => {
-    setNotes((prevNotes) => prevNotes.filter((note) => note.id !== noteId));
-  };
-
-  const togglePinNote = (noteId) => {
+  const updateNote = async (noteUuid, updateFields) => {
     setNotes((prevNotes) =>
       prevNotes.map((note) =>
-        note.id === noteId
-          ? {
-              ...note,
-              isPinned: !note.isPinned,
-              pinnedAt: !note.isPinned ? new Date().toISOString() : null,
-            }
+        note.uuid === noteUuid
+          ? { ...note, ...updateFields, _isSaving: true }
           : note
       )
     );
+    try {
+      const note = notes.find((n) => n.uuid === noteUuid);
+      // Only send minimal fields to backend, and always map labels to IDs
+      let payload = { ...updateFields };
+      if (updateFields.labels) {
+        payload.labels = updateFields.labels.map((l) =>
+          typeof l === "object" ? l.id : l
+        );
+      } else if (note.labels) {
+        payload.labels = note.labels.map((l) =>
+          typeof l === "object" ? l.id : l
+        );
+      }
+      const response = await noteService.updateNote(noteUuid, payload);
+      setNotes((prevNotes) =>
+        prevNotes.map((n) =>
+          n.uuid === noteUuid ? { ...response.note, _isSaving: false } : n
+        )
+      );
+    } catch (err) {
+      setNotes((prevNotes) =>
+        prevNotes.map((n) =>
+          n.uuid === noteUuid ? { ...n, _isSaving: false } : n
+        )
+      );
+      console.error("Update failed:", err);
+      throw err;
+    }
   };
 
-  const lockNote = (noteId, password) => {
-    console.log("Locking note:", noteId, "with password:", password); // Debug log
-    setNotes((prevNotes) => {
-      const newNotes = prevNotes.map((note) =>
-        note.id === noteId
-          ? {
-              ...note,
-              lockStatus: {
-                isLocked: !note.lockStatus?.isLocked,
-                password: password,
-              },
-            }
-          : note
+  const deleteNote = (noteUuid) => {
+    setNotes((prevNotes) => prevNotes.filter((note) => note.uuid !== noteUuid));
+  };
+
+  const togglePinNote = async (noteUuid) => {
+    try {
+      const note = notes.find((n) => n.uuid === noteUuid);
+      if (!note) {
+        console.error("Note not found:", noteUuid);
+        return;
+      }
+
+      const toggledIsPinned = !note.is_pinned;
+      const toggledPinnedAt = toggledIsPinned ? new Date().toISOString() : null;
+
+      const updatedNote = {
+        ...note,
+        is_pinned: toggledIsPinned,
+        pinned_at: toggledPinnedAt,
+        _isSaving: true,
+      };
+      setNotes((prevNotes) =>
+        prevNotes.map((n) => (n.uuid === noteUuid ? updatedNote : n))
       );
-      console.log("New notes state after lock:", newNotes); // Debug log
-      return newNotes;
-    });
+
+      const response = await noteService.updateNote(noteUuid, {
+        is_pinned: toggledIsPinned,
+        pinned_at: toggledPinnedAt,
+        title: updatedNote.title,
+        content: updatedNote.content,
+        labels: updatedNote.labels,
+      });
+
+      const backendNote = response.note;
+      setNotes((prevNotes) =>
+        prevNotes.map((n) =>
+          n.uuid === noteUuid
+            ? {
+                ...n,
+                is_pinned: backendNote.is_pinned,
+                pinned_at: backendNote.pinned_at,
+                _isSaving: false,
+              }
+            : n
+        )
+      );
+    } catch (err) {
+      console.error("Pin/unpin failed:", err);
+      setNotes((prevNotes) =>
+        prevNotes.map((n) =>
+          n.uuid === noteUuid ? { ...n, _isSaving: false } : n
+        )
+      );
+    }
   };
 
   const filterAndSortNotes = (
@@ -108,43 +122,49 @@ const useNoteManagement = () => {
   ) => {
     let filteredNotes = [...notes];
 
-    // Filter by pinned status
     if (showPinnedOnly) {
-      filteredNotes = filteredNotes.filter((note) => note.isPinned);
+      filteredNotes = filteredNotes.filter((note) => note.is_pinned);
+      // Don't apply label filter to pinned notes
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        filteredNotes = filteredNotes.filter(
+          (note) =>
+            note.title.toLowerCase().includes(query) ||
+            note.content.toLowerCase().includes(query)
+        );
+      }
+    } else {
+      // For main notes list, DO NOT filter out pinned notes
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        filteredNotes = filteredNotes.filter(
+          (note) =>
+            note.title.toLowerCase().includes(query) ||
+            note.content.toLowerCase().includes(query)
+        );
+      }
+      if (selectedLabel) {
+        filteredNotes = filteredNotes.filter((note) =>
+          note.labels?.some((label) => label.name === selectedLabel)
+        );
+      }
     }
 
-    // Filter by search query
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filteredNotes = filteredNotes.filter(
-        (note) =>
-          note.title.toLowerCase().includes(query) ||
-          note.content.toLowerCase().includes(query)
-      );
-    }
-
-    // Filter by label
-    if (selectedLabel) {
-      filteredNotes = filteredNotes.filter((note) =>
-        note.labels.some((label) => label.name === selectedLabel)
-      );
-    }
-
-    // Sort notes only if sortBy is explicitly set
+    // Apply sorting
     if (sortBy !== "manual") {
       switch (sortBy) {
         case "newest":
           filteredNotes.sort(
             (a, b) =>
-              new Date(b.updatedAt || b.createdAt) -
-              new Date(a.updatedAt || a.createdAt)
+              new Date(b.updated_at || b.created_at) -
+              new Date(a.updated_at || a.created_at)
           );
           break;
         case "oldest":
           filteredNotes.sort(
             (a, b) =>
-              new Date(a.updatedAt || a.createdAt) -
-              new Date(b.updatedAt || b.createdAt)
+              new Date(a.updated_at || a.created_at) -
+              new Date(b.updated_at || b.created_at)
           );
           break;
         case "title":
@@ -155,11 +175,11 @@ const useNoteManagement = () => {
       }
     }
 
-    // Sort pinned notes by pinnedAt (most recent first)
+    // Sort pinned notes by pinned_at date
     if (showPinnedOnly) {
       filteredNotes.sort((a, b) => {
-        const pinnedAtA = a.pinnedAt ? new Date(a.pinnedAt) : new Date(0);
-        const pinnedAtB = b.pinnedAt ? new Date(b.pinnedAt) : new Date(0);
+        const pinnedAtA = a.pinned_at ? new Date(a.pinned_at) : new Date(0);
+        const pinnedAtB = b.pinned_at ? new Date(b.pinned_at) : new Date(0);
         return pinnedAtB - pinnedAtA;
       });
     }
@@ -169,11 +189,11 @@ const useNoteManagement = () => {
 
   return {
     notes,
+    setNotes,
     addNote,
     updateNote,
     deleteNote,
     togglePinNote,
-    lockNote,
     filterAndSortNotes,
     loading,
   };

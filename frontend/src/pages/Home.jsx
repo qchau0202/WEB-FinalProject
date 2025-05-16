@@ -1,14 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useNoteManagement from "../hooks/useNoteManagement";
 import Note from "../components/notes/Note";
 import NoteCreateCard from "../components/notes/NoteCreateCard";
-import { Empty, Spin } from "antd";
+import { Empty, Spin, message } from "antd";
 import { useLabel } from "../contexts/LabelsContext";
 import { useNavigate } from "react-router-dom";
 import notificationsData from "../mock-data/notifications";
 import NotePinnedSection from "../components/notes/NotePinnedSection";
 import FunctionBar from "../components/common/FunctionBar";
 import { useTheme } from "../contexts/ThemeContext";
+import { noteService } from "../services";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ const Home = () => {
   const { theme } = useTheme();
   const {
     notes,
+    setNotes,
     addNote,
     updateNote,
     deleteNote,
@@ -31,6 +33,23 @@ const Home = () => {
   const [notificationVisible, setNotificationVisible] = useState(false);
   const [showAllNotifications, setShowAllNotifications] = useState(false);
   const notifications = notificationsData;
+
+  // Fetch notes when component mounts
+  useEffect(() => {
+    const fetchNotes = async () => {
+      try {
+        const response = await noteService.getAllNotes();
+        // Combine own notes and shared notes, use backend fields only
+        const allNotes = [...response.own_notes, ...response.shared_notes];
+        setNotes(allNotes);
+      } catch (error) {
+        console.error("Failed to fetch notes:", error);
+        message.error("Failed to load notes. Please refresh the page.");
+      }
+    };
+
+    fetchNotes();
+  }, [setNotes]);
 
   const sortedNotes = filterAndSortNotes(notes, {
     searchQuery,
@@ -119,11 +138,10 @@ const Home = () => {
                 <NoteCreateCard addNote={addNote} viewMode={viewMode} />
 
                 {/* Notes Grid */}
-                {sortedNotes.map((note, index) => (
-                  <div key={note.id} className="w-full">
+                {sortedNotes.map((note) => (
+                  <div key={note.uuid} className="w-full">
                     <Note
                       note={note}
-                      index={index}
                       onUpdate={updateNote}
                       onDelete={deleteNote}
                       onTogglePin={togglePinNote}
@@ -140,11 +158,10 @@ const Home = () => {
                 <NoteCreateCard addNote={addNote} viewMode={viewMode} />
 
                 {/* Notes List */}
-                {sortedNotes.map((note, index) => (
-                  <div key={note.id}>
+                {sortedNotes.map((note) => (
+                  <div key={note.uuid}>
                     <Note
                       note={note}
-                      index={index}
                       onUpdate={updateNote}
                       onDelete={deleteNote}
                       onTogglePin={togglePinNote}

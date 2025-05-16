@@ -2,7 +2,7 @@ import { RouterProvider } from "react-router-dom";
 import router from "./routes";
 import { ConfigProvider } from "antd";
 import { Toaster } from "react-hot-toast";
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { LabelProvider } from "./contexts/LabelsContext";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 
@@ -42,11 +42,22 @@ const AppContent = () => {
   );
 };
 
+// New wrapper to get userId from AuthContext and remount ThemeProvider on user change
+const ThemeProviderWithKey = ({ children }) => {
+  const { currentUser } = useAuth();
+  const userId = currentUser?.uuid || "guest";
+  return <ThemeProvider key={userId}>{children}</ThemeProvider>;
+};
+
 const App = () => {
   return (
-    <ThemeProvider>
-      <AppContent />
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProviderWithKey>
+        <LabelProvider>
+          <AppContent />
+        </LabelProvider>
+      </ThemeProviderWithKey>
+    </AuthProvider>
   );
 };
 

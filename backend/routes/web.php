@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\LabelController;
+use App\Http\Controllers\NoteAttachmentController;
 
 // Public routes
 Route::post('/login', [AuthController::class, 'login']);
@@ -27,19 +28,42 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // Note routes
-    Route::get('/notes', [NoteController::class, 'index']);
-    Route::post('/notes', [NoteController::class, 'store']);
-    Route::get('/notes/{uuid}', [NoteController::class, 'show']);
-    Route::put('/notes/{uuid}', [NoteController::class, 'update']);
-    Route::delete('/notes/{uuid}', [NoteController::class, 'destroy']);
-    
-    // Note collaboration routes
-    Route::post('/notes/{uuid}/collaborators', [NoteController::class, 'addCollaborator']);
-    Route::delete('/notes/{uuid}/collaborators/{userId}', [NoteController::class, 'removeCollaborator']);
-    
-    // Note attachment routes
-    Route::post('/notes/{uuid}/attachments', [NoteController::class, 'uploadAttachment']);
-    Route::delete('/notes/{uuid}/attachments/{attachmentId}', [NoteController::class, 'deleteAttachment']);
+    Route::prefix('notes')->group(function () {
+        // Basic CRUD operations
+        Route::get('/', [NoteController::class, 'index']);
+        Route::post('/', [NoteController::class, 'store']);
+        Route::get('/{uuid}', [NoteController::class, 'show']);
+        Route::put('/{uuid}', [NoteController::class, 'update']);
+        Route::delete('/{uuid}', [NoteController::class, 'destroy']);
+
+        // Note collaboration
+        Route::prefix('{uuid}/collaborators')->group(function () {
+            Route::post('/', [NoteController::class, 'addCollaborator']);
+            Route::delete('/{userId}', [NoteController::class, 'removeCollaborator']);
+        });
+
+        // Note attachments
+        Route::prefix('{uuid}/attachments')->group(function () {
+            Route::get('/', [NoteAttachmentController::class, 'index']);
+            Route::post('/', [NoteAttachmentController::class, 'store']);
+            Route::get('/{attachmentId}', [NoteAttachmentController::class, 'show']);
+            Route::delete('/{attachmentId}', [NoteAttachmentController::class, 'destroy']);
+        });
+
+        // Note labels
+        Route::prefix('{uuid}/labels')->group(function () {
+            Route::post('/', [NoteController::class, 'addLabel']);
+            Route::delete('/{labelId}', [NoteController::class, 'removeLabel']);
+        });
+
+        // Note lock operations
+        Route::prefix('{uuid}/lock')->group(function () {
+            Route::post('/enable', [NoteController::class, 'enableLock']);
+            Route::post('/disable', [NoteController::class, 'disableLock']);
+            Route::post('/toggle', [NoteController::class, 'toggleLock']);
+            Route::post('/verify', [NoteController::class, 'verifyLockPassword']);
+        });
+    });
 
     // Label routes
     Route::get('/labels', [LabelController::class, 'index']);
