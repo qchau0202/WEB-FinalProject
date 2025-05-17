@@ -12,6 +12,7 @@ import { noteService } from "../services";
 import { attachmentService } from "../services/attachmentService";
 import { useDebouncedCallback } from "../hooks/useDebounce";
 import toast from "react-hot-toast";
+import { useAuth } from "./AuthContext";
 
 const NotesContext = createContext();
 
@@ -34,6 +35,15 @@ export const NoteProvider = ({
   const [attachments, setAttachments] = useState([]);
   const navigate = useNavigate();
   const saveController = useRef(null);
+  const { currentUser } = useAuth();
+  let permission = "owner";
+  if (currentUser && note.user_id !== currentUser.uuid) {
+    // Not the owner, check collaborators
+    const collab = (note.collaborators || []).find(
+      (c) => c.uuid === currentUser.uuid
+    );
+    permission = collab?.pivot?.permission || "read";
+  }
 
   // Memoize the note update callback
   const updateNoteCallback = useCallback(
@@ -227,6 +237,7 @@ export const NoteProvider = ({
       lockAction,
       setLockAction,
       onLockStateChange,
+      permission,
     }),
     [
       note,
@@ -250,6 +261,7 @@ export const NoteProvider = ({
       showLockModal,
       lockAction,
       onLockStateChange,
+      permission,
     ]
   );
 

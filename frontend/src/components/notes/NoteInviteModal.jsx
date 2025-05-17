@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Modal, Form, Input, Select, Button } from "antd";
 import { useTheme } from "../../contexts/ThemeContext";
 import { noteService } from "../../services/noteService";
+import { notificationService } from "../../services/notificationService";
 import { toast } from "react-hot-toast";
 
 const { Option } = Select;
@@ -10,6 +11,19 @@ const NoteInviteModal = ({ isOpen, onClose, noteUuid }) => {
   const { theme } = useTheme();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true);
+      const response = await notificationService.getNotifications();
+      setNotifications(Array.isArray(response.data) ? response.data : []);
+    } catch {
+      toast.error("Failed to fetch notifications");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (values) => {
     try {
@@ -18,6 +32,7 @@ const NoteInviteModal = ({ isOpen, onClose, noteUuid }) => {
         email: values.email,
         permission: values.permission,
       });
+      await fetchNotifications();
       toast.success("Invitation sent successfully");
       form.resetFields();
       onClose();

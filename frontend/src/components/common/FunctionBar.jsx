@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Input, Select, Button, Badge, Dropdown, Popover } from "antd";
+import { Input, Select, Button, Badge, Dropdown } from "antd";
 import {
   AppstoreOutlined,
   UnorderedListOutlined,
@@ -19,7 +19,6 @@ const FunctionBar = ({ onSearch, onSort, onViewModeChange }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("manual");
   const [viewMode, setViewMode] = useState("grid");
-  const [notificationVisible, setNotificationVisible] = useState(false);
   const [showAllNotifications, setShowAllNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -89,20 +88,26 @@ const FunctionBar = ({ onSearch, onSort, onViewModeChange }) => {
               size="large"
               onClick={() => handleViewModeChange("list")}
             />
-            <Popover
-              content={
-                <Notifications
-                  max={showAllNotifications ? undefined : 3}
-                  onShowMore={handleShowMore}
-                />
+            <Dropdown
+              overlay={
+                <div
+                  style={{ minWidth: 340, maxWidth: 380 }}
+                  className={
+                    theme === "dark"
+                      ? "bg-gray-900 border border-gray-700"
+                      : "bg-white border border-gray-200"
+                  }
+                >
+                  <Notifications
+                    max={showAllNotifications ? undefined : 3}
+                    onShowMore={handleShowMore}
+                  />
+                </div>
               }
-              trigger="click"
-              open={notificationVisible}
-              onOpenChange={(visible) => {
-                setNotificationVisible(visible);
-                if (!visible) setShowAllNotifications(false);
-              }}
+              trigger={["click"]}
               placement="bottomRight"
+              overlayClassName="notelit-notification-dropdown"
+              getPopupContainer={(node) => node.parentNode}
             >
               <Button
                 icon={
@@ -116,7 +121,7 @@ const FunctionBar = ({ onSearch, onSort, onViewModeChange }) => {
                 }
                 size="large"
               />
-            </Popover>
+            </Dropdown>
           </div>
         </div>
         <Input
@@ -128,7 +133,7 @@ const FunctionBar = ({ onSearch, onSort, onViewModeChange }) => {
             theme === "dark"
               ? "bg-gray-800 border-gray-700 text-white placeholder-gray-400"
               : "bg-gray-100 border-gray-200 text-gray-900 placeholder-gray-500"
-            }`}
+          }`}
           size="large"
         />
       </div>
@@ -178,20 +183,26 @@ const FunctionBar = ({ onSearch, onSort, onViewModeChange }) => {
           />
         </div>
         <div>
-          <Popover
-            content={
-              <Notifications
-                max={showAllNotifications ? undefined : 3}
-                onShowMore={handleShowMore}
-              />
+          <Dropdown
+            overlay={
+              <div
+                style={{ minWidth: 340, maxWidth: 380 }}
+                className={
+                  theme === "dark"
+                    ? "bg-gray-900 border border-gray-700"
+                    : "bg-white border border-gray-200"
+                }
+              >
+                <Notifications
+                  max={showAllNotifications ? undefined : 3}
+                  onShowMore={handleShowMore}
+                />
+              </div>
             }
-            trigger="click"
-            open={notificationVisible}
-            onOpenChange={(visible) => {
-              setNotificationVisible(visible);
-              if (!visible) setShowAllNotifications(false);
-            }}
+            trigger={["click"]}
             placement="bottomRight"
+            overlayClassName="notelit-notification-dropdown"
+            getPopupContainer={(node) => node.parentNode}
           >
             <Button
               icon={
@@ -208,7 +219,7 @@ const FunctionBar = ({ onSearch, onSort, onViewModeChange }) => {
               }`}
               size="large"
             />
-          </Popover>
+          </Dropdown>
         </div>
       </div>
     </div>

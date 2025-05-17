@@ -215,7 +215,7 @@ const ProfileOverview = ({ user }) => {
               >
                 {isSendingVerification
                   ? "Sending..."
-                  : "Resend verification email"}
+                  : "Send verification email"}
               </button>
             </div>
           </div>

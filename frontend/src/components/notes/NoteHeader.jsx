@@ -17,6 +17,7 @@ import { useRef, useState, useEffect } from "react";
 import { noteService } from "../../services/noteService";
 import NoteInviteModal from "./NoteInviteModal";
 import NoteCollaboratorsModal from "./NoteCollaboratorsModal";
+import toast from "react-hot-toast";
 
 const formatDate = (dateString) => {
   if (!dateString) return "";
@@ -38,6 +39,7 @@ const NoteHeader = () => {
     setShowLockModal,
     setLockAction,
     onLockStateChange,
+    permission,
   } = useNote();
   const { theme, fontSize, getTitleFontSizeClass, themeClasses } = useTheme();
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -82,6 +84,10 @@ const NoteHeader = () => {
 
   const handleLockClick = (e) => {
     e.stopPropagation();
+    if (permission !== "owner") {
+      toast.error("Only the note owner can lock or unlock this note.");
+      return;
+    }
     if (note.lock_feature_enabled) {
       if (!note.is_locked) {
         // If password is already set, lock immediately
@@ -128,6 +134,7 @@ const NoteHeader = () => {
             key: "invite",
             label: "Invite Collaborator",
             onClick: () => setShowInviteModal(true),
+            disabled: permission !== "owner",
           },
           {
             key: "lock",
@@ -137,6 +144,7 @@ const NoteHeader = () => {
             onClick: note.lock_feature_enabled
               ? handleDisableLock
               : handleEnableLock,
+            disabled: permission !== "owner",
           },
         ]
       : [
@@ -144,6 +152,7 @@ const NoteHeader = () => {
             key: "invite",
             label: "Invite Collaborator",
             onClick: () => setShowInviteModal(true),
+            disabled: permission !== "owner",
           },
           {
             key: "delete",
@@ -152,6 +161,7 @@ const NoteHeader = () => {
               e.domEvent.stopPropagation();
               setConfirmDelete(true);
             },
+            disabled: permission !== "owner",
           },
           {
             key: "lock",
@@ -161,6 +171,7 @@ const NoteHeader = () => {
             onClick: note.lock_feature_enabled
               ? handleDisableLock
               : handleEnableLock,
+            disabled: permission !== "owner",
           },
         ],
   };
@@ -169,7 +180,7 @@ const NoteHeader = () => {
     <>
       {isDetailView && (
         <div
-          className={`border-b ${
+          className={`border-b rounded-t-lg ${
             theme === "dark"
               ? "bg-gray-800 border-gray-700"
               : "bg-white border-gray-200"
@@ -231,9 +242,6 @@ const NoteHeader = () => {
                       e.stopPropagation();
                       handlePin();
                     }}
-                    className={`text-lg ${
-                      theme === "dark" ? "text-gray-200" : "text-gray-600"
-                    } ${themeClasses.font[fontSize]}`}
                   />
                 </Tooltip>
                 {note.lock_feature_enabled && (
@@ -290,6 +298,7 @@ const NoteHeader = () => {
                     }
                     danger
                     onClick={() => setConfirmDelete(true)}
+                    disabled={permission !== "owner"}
                   />
                 </Tooltip>
 
@@ -336,6 +345,7 @@ const NoteHeader = () => {
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
             }}
+            readOnly={permission !== "owner" && permission !== "edit"}
           />
           <div
             className={`text-sm mt-1 ${

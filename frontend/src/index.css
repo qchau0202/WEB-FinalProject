@@ -19,3 +19,22 @@ body {
   background-color: #121212;
   color: #f9fafb;
 }
+
+.notelit-notification-dropdown {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18), 0 1.5px 6px rgba(0, 0, 0, 0.08);
+  border-radius: 8px !important;
+  overflow: hidden;
+  background: var(--antd-background, #fff);
+  padding: 0;
+  min-width: 340px;
+  max-width: 380px;
+}
+
+@media (max-width: 767px) {
+  .notelit-notification-dropdown {
+    min-width: 95vw;
+    max-width: 98vw;
+    left: 2vw !important;
+    right: 2vw !important;
+  }
+}

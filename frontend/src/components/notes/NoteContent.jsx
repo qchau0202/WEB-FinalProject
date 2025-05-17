@@ -13,6 +13,7 @@ const NoteContent = () => {
     handleInput,
     title,
     handleFileUpload,
+    permission,
   } = useNote();
   const { fontSize, themeClasses } = useTheme();
 
@@ -53,6 +54,7 @@ const NoteContent = () => {
           wordBreak: "break-word",
         }}
         onClick={(e) => e.stopPropagation()}
+        readOnly={permission !== "owner" && permission !== "edit"}
       />
       <div
         className={`flex flex-col gap-2 md:flex-row md:items-center px-5 py-3 border-t ${
@@ -74,6 +76,14 @@ const NoteContent = () => {
             <label>
               <div
                 className={`p-1 rounded-full ${themeClasses.bg.hover} ${themeClasses.text.light} cursor-pointer`}
+                style={{
+                  opacity:
+                    permission === "owner" || permission === "edit" ? 1 : 0.5,
+                  pointerEvents:
+                    permission === "owner" || permission === "edit"
+                      ? "auto"
+                      : "none",
+                }}
               >
                 <PictureOutlined
                   className={`${themeClasses.text.muted} text-lg`}
@@ -86,6 +96,7 @@ const NoteContent = () => {
                 multiple
                 onChange={onFileChange}
                 onClick={(e) => e.stopPropagation()}
+                disabled={permission !== "owner" && permission !== "edit"}
               />
             </label>
           </Tooltip>
@@ -93,6 +104,14 @@ const NoteContent = () => {
             <label>
               <div
                 className={`p-1 rounded-full ${themeClasses.bg.hover} ${themeClasses.text.light} cursor-pointer`}
+                style={{
+                  opacity:
+                    permission === "owner" || permission === "edit" ? 1 : 0.5,
+                  pointerEvents:
+                    permission === "owner" || permission === "edit"
+                      ? "auto"
+                      : "none",
+                }}
               >
                 <FileOutlined
                   className={`${themeClasses.text.muted} text-lg`}
@@ -104,6 +123,7 @@ const NoteContent = () => {
                 multiple
                 onChange={onFileChange}
                 onClick={(e) => e.stopPropagation()}
+                disabled={permission !== "owner" && permission !== "edit"}
               />
             </label>
           </Tooltip>

@@ -119,13 +119,13 @@ const NoteCollaboratorsModal = ({
           const isSelf = currentUser?.uuid === collaborator.uuid;
           return (
             <List.Item
-              className={`p-4 border-b ${
+              className={`p-4 border-b rounded-lg ${
                 theme === "dark"
                   ? "border-gray-700 hover:bg-gray-700"
-                  : "border-gray-200 hover:bg-gray-50"
+                  : "border-gray-200 hover:bg-gray-100"
               }`}
             >
-              <div className="flex items-center gap-3 w-full">
+              <div className="flex items-center gap-3 w-full p-2 ">
                 <Avatar
                   src={collaborator.avatar}
                   icon={<UserOutlined />}

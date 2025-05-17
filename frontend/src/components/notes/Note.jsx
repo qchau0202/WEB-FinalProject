@@ -14,27 +14,37 @@ import { Button } from "antd";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useMemo, useCallback } from "react";
+import toast from "react-hot-toast";
 
 const LockedNoteView = ({ note, isDetailView, viewMode }) => {
-  const { setShowLockModal, setLockAction, setConfirmDelete } = useNote();
+  const { setShowLockModal, setLockAction, setConfirmDelete, permission } =
+    useNote();
   const navigate = useNavigate();
   const { fontSize, getTitleFontSizeClass, themeClasses } = useTheme();
 
   const handleUnlockClick = useCallback(
     (e) => {
       e.stopPropagation();
+      if (permission !== "owner") {
+        toast.error("Only the note owner can unlock this note.");
+        return;
+      }
       setLockAction("unlock");
       setShowLockModal(true);
     },
-    [setLockAction, setShowLockModal]
+    [setLockAction, setShowLockModal, permission]
   );
 
   const handleDeleteClick = useCallback(
     (e) => {
       e.stopPropagation();
+      if (permission !== "owner") {
+        toast.error("Only the note owner can delete this note.");
+        return;
+      }
       setConfirmDelete(true);
     },
-    [setConfirmDelete]
+    [setConfirmDelete, permission]
   );
 
   const handleBackClick = useCallback(
@@ -48,7 +58,7 @@ const LockedNoteView = ({ note, isDetailView, viewMode }) => {
   if (isDetailView) {
     return (
       <div>
-        <div className="py-8 px-4 w-full max-w-sm mx-auto flex flex-col justify-center">
+        <div className="py-8 px-4 w-full max-w-sm mx-auto flex flex-col justify-center ">
           <div className="hidden md:flex justify-between mb-2">
             <Button
               icon={<ArrowLeftOutlined />}

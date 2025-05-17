@@ -12,7 +12,8 @@ import { attachmentService } from "../../services/attachmentService";
 import { FaPaperclip } from "react-icons/fa6";
 
 const NoteAttachments = () => {
-  const { note, isDetailView, attachments, refreshAttachments } = useNote();
+  const { note, isDetailView, attachments, refreshAttachments, permission } =
+    useNote();
   const { themeClasses, fontSize } = useTheme();
 
   // Fetch attachments on mount or when note changes
@@ -43,11 +44,11 @@ const NoteAttachments = () => {
       >
         <Tooltip
           title={
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 ${themeClasses.bg.primary}">
               {attachments.map((file) => (
                 <div
                   key={file.id}
-                  className="flex items-center gap-2 justify-between"
+                  className="flex items-center gap-2 justify-between "
                 >
                   <span className="text-white truncate max-w-[200px]">
                     {file.original_filename}
@@ -61,14 +62,17 @@ const NoteAttachments = () => {
                       e.stopPropagation();
                       handleDelete(file.id);
                     }}
+                    disabled={permission !== "owner" && permission !== "edit"}
                   />
                 </div>
               ))}
             </div>
           }
           placement="topRight"
-          color={themeClasses.bg.primary}
-          style={{ padding: "8px" }}
+          style={{
+            padding: "8px",
+            backgroundColor: themeClasses.bg.primary,
+          }}
         >
           <div className="flex items-center gap-1 cursor-pointer">
             <div
@@ -154,6 +158,7 @@ const NoteAttachments = () => {
                     e.stopPropagation();
                     handleDelete(file.id);
                   }}
+                  disabled={permission !== "owner" && permission !== "edit"}
                 />
               </div>
             ))}
@@ -166,7 +171,7 @@ const NoteAttachments = () => {
   // Detailed view UI (desktop)
   return (
     <div
-      className={`p-4 sm:p-6 border-t ${themeClasses.border.primary} ${themeClasses.bg.secondary}`}
+      className={`p-4 sm:p-6 border-t rounded-b-lg ${themeClasses.border.primary} ${themeClasses.bg.secondary}`}
     >
       <h1
         className={`${themeClasses.font[fontSize]} font-medium mb-3 flex items-center ${themeClasses.text.primary}`}
@@ -204,7 +209,11 @@ const NoteAttachments = () => {
               icon={<DeleteOutlined />}
               danger
               size="small"
-              onClick={() => handleDelete(file.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete(file.id);
+              }}
+              disabled={permission !== "owner" && permission !== "edit"}
             />
           </div>
         ))}

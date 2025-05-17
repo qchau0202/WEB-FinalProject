@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Form, Input } from "antd";
 import toast from "react-hot-toast";
 import background from "/bg.jpg";
 import { LockOutlined } from "@ant-design/icons";
@@ -9,7 +8,10 @@ import { authService } from "../services/authService";
 const PasswordReset = () => {
   const { token } = useParams();
   const navigate = useNavigate();
-  const [form] = Form.useForm();
+  const [formData, setFormData] = useState({
+    password: "",
+    password_confirmation: "",
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
@@ -27,22 +29,36 @@ const PasswordReset = () => {
     }
   }, [token]);
 
-  const handleSubmit = async (values) => {
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setError("");
+    setFieldErrors((prev) => ({ ...prev, [name]: undefined }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     if (!token) {
       toast.error(
         "Invalid reset token. Please request a new password reset link."
       );
       return;
     }
-
     setIsSubmitting(true);
     setError("");
     setFieldErrors({});
+    if (formData.password !== formData.password_confirmation) {
+      setError("Passwords do not match");
+      setFieldErrors({ password_confirmation: ["Passwords do not match."] });
+      toast.error("Passwords do not match");
+      setIsSubmitting(false);
+      return;
+    }
     try {
       await authService.resetPassword({
         token,
-        password: values.password,
-        password_confirmation: values.password_confirmation,
+        password: formData.password,
+        password_confirmation: formData.password_confirmation,
       });
       toast.success(
         "Password reset successful! Please log in with your new password."
@@ -113,60 +129,81 @@ const PasswordReset = () => {
             Enter your new password below.
           </p>
         </div>
-        <Form
-          form={form}
-          className="mt-8 space-y-6"
-          layout="vertical"
-          onFinish={handleSubmit}
-        >
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && !Object.keys(fieldErrors).length && (
             <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm mb-4">
               {error}
             </div>
           )}
-          <Form.Item
-            name="password"
-            label="New Password"
-            rules={[
-              { required: true, message: "Please enter your new password" },
-              { min: 8, message: "Password must be at least 8 characters" },
-            ]}
-            hasFeedback
-            validateStatus={fieldErrors.password ? "error" : ""}
-            help={fieldErrors.password?.[0]}
-          >
-            <Input.Password
-              prefix={<LockOutlined className="text-gray-400" />}
-              placeholder="Enter new password"
-              disabled={isSubmitting}
-            />
-          </Form.Item>
-          <Form.Item
-            name="password_confirmation"
-            label="Confirm New Password"
-            dependencies={["password"]}
-            hasFeedback
-            validateStatus={fieldErrors.password_confirmation ? "error" : ""}
-            help={fieldErrors.password_confirmation?.[0]}
-            rules={[
-              { required: true, message: "Please confirm your new password" },
-              ({ getFieldValue }) => ({
-                validator(_, value) {
-                  if (!value || getFieldValue("password") === value) {
-                    return Promise.resolve();
-                  }
-                  return Promise.reject(new Error("Passwords do not match"));
-                },
-              }),
-            ]}
-          >
-            <Input.Password
-              prefix={<LockOutlined className="text-gray-400" />}
-              placeholder="Confirm new password"
-              disabled={isSubmitting}
-            />
-          </Form.Item>
-          <Form.Item>
+          <div className="rounded-md space-y-4">
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                New Password
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <LockOutlined className="text-gray-400" />
+                </div>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  className={`appearance-none rounded-lg relative block w-full pl-10 px-3 py-2 border ${
+                    fieldErrors.password ? "border-red-500" : "border-gray-300"
+                  } placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-colors`}
+                  placeholder="Enter new password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  disabled={isSubmitting}
+                />
+              </div>
+              {fieldErrors.password && (
+                <p className="text-xs text-red-500 mt-1">
+                  {fieldErrors.password[0]}
+                </p>
+              )}
+            </div>
+            <div>
+              <label
+                htmlFor="password_confirmation"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Confirm New Password
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <LockOutlined className="text-gray-400" />
+                </div>
+                <input
+                  id="password_confirmation"
+                  name="password_confirmation"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  className={`appearance-none rounded-lg relative block w-full pl-10 px-3 py-2 border ${
+                    fieldErrors.password_confirmation
+                      ? "border-red-500"
+                      : "border-gray-300"
+                  } placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-colors`}
+                  placeholder="Confirm new password"
+                  value={formData.password_confirmation}
+                  onChange={handleChange}
+                  disabled={isSubmitting}
+                />
+              </div>
+              {fieldErrors.password_confirmation && (
+                <p className="text-xs text-red-500 mt-1">
+                  {fieldErrors.password_confirmation[0]}
+                </p>
+              )}
+            </div>
+          </div>
+          <div>
             <button
               type="submit"
               disabled={isSubmitting}
@@ -174,8 +211,8 @@ const PasswordReset = () => {
             >
               {isSubmitting ? "Resetting..." : "Reset Password"}
             </button>
-          </Form.Item>
-        </Form>
+          </div>
+        </form>
       </div>
     </div>
   );

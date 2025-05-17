@@ -13,6 +13,7 @@ const NoteLabels = ({ onClick }) => {
     isDetailView,
     handleAddLabel,
     handleRemoveLabel,
+    permission,
   } = useNote();
   const { availableLabels } = useLabel();
   const { theme, fontSize, themeClasses } = useTheme();
@@ -93,8 +94,10 @@ const NoteLabels = ({ onClick }) => {
               </div>
             ),
             onClick: (e) => {
-              e.domEvent.stopPropagation();
-              handleAddLabel(label);
+              if (permission === "owner" || permission === "edit") {
+                e.domEvent.stopPropagation();
+                handleAddLabel(label);
+              }
             },
           }))
         : [
@@ -175,21 +178,25 @@ const NoteLabels = ({ onClick }) => {
               >
                 {label.name}
               </span>
-              <CloseOutlined
-                className={`ml-2 cursor-pointer leading-none align-middle flex items-center justify-center ${
-                  theme === "dark" ? "hover:text-red-400" : "hover:text-red-700"
-                }`}
-                style={{
-                  fontSize: 16,
-                  display: "flex",
-                  alignItems: "center",
-                  height: "1em",
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRemoveLabel(label);
-                }}
-              />
+              {(permission === "owner" || permission === "edit") && (
+                <CloseOutlined
+                  className={`ml-2 cursor-pointer leading-none align-middle flex items-center justify-center ${
+                    theme === "dark"
+                      ? "hover:text-red-400"
+                      : "hover:text-red-700"
+                  }`}
+                  style={{
+                    fontSize: 16,
+                    display: "flex",
+                    alignItems: "center",
+                    height: "1em",
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveLabel(label);
+                  }}
+                />
+              )}
             </div>
           ))}
           {badgeNeeded && (
@@ -209,23 +216,25 @@ const NoteLabels = ({ onClick }) => {
                       }}
                     >
                       <span style={{ flex: 1 }}>{label.name}</span>
-                      <CloseOutlined
-                        className={`ml-2 cursor-pointer leading-none align-middle flex items-center justify-center ${
-                          theme === "dark"
-                            ? "hover:text-red-400"
-                            : "hover:text-red-700"
-                        }`}
-                        style={{
-                          fontSize: 16,
-                          display: "flex",
-                          alignItems: "center",
-                          height: "1em",
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRemoveLabel(label);
-                        }}
-                      />
+                      {(permission === "owner" || permission === "edit") && (
+                        <CloseOutlined
+                          className={`ml-2 cursor-pointer leading-none align-middle flex items-center justify-center ${
+                            theme === "dark"
+                              ? "hover:text-red-400"
+                              : "hover:text-red-700"
+                          }`}
+                          style={{
+                            fontSize: 16,
+                            display: "flex",
+                            alignItems: "center",
+                            height: "1em",
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveLabel(label);
+                          }}
+                        />
+                      )}
                     </div>
                   ))}
                 </div>
@@ -248,13 +257,14 @@ const NoteLabels = ({ onClick }) => {
           )}
         </>
       )}
-      {remainingLabels.length > 0 && (
-        <Dropdown menu={menu} trigger={["click"]} placement="bottomRight">
-          <Tooltip title="Add label" className={themeClasses.font[fontSize]}>
-            {addLabelButton}
-          </Tooltip>
-        </Dropdown>
-      )}
+      {remainingLabels.length > 0 &&
+        (permission === "owner" || permission === "edit") && (
+          <Dropdown menu={menu} trigger={["click"]} placement="bottomRight">
+            <Tooltip title="Add label" className={themeClasses.font[fontSize]}>
+              {addLabelButton}
+            </Tooltip>
+          </Dropdown>
+        )}
     </div>
   );
 };

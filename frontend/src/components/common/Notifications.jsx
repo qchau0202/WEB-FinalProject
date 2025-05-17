@@ -248,9 +248,7 @@ const Notifications = ({ max, onShowMore }) => {
     : [];
 
   return (
-    <div
-      className={`notelit-notifications max-h-96 overflow-y-auto overflow-x-hidden w-[320px]`}
-    >
+    <div className={`notelit-notifications`}>
       <div
         className={`px-3 py-2 border-b ${
           theme === "dark" ? "border-gray-700" : "border-gray-200"
@@ -277,196 +275,205 @@ const Notifications = ({ max, onShowMore }) => {
           )}
         </div>
       </div>
-      <List
-        dataSource={displayedNotifications}
-        loading={loading}
-        className="w-full"
-        locale={{
-          emptyText: (
-            <div
-              className={`text-center py-6 text-base ${
-                theme === "dark" ? "text-gray-400" : "text-gray-500"
-              }`}
-            >
-              No notifications
-            </div>
-          ),
-        }}
-        renderItem={(notification) => {
-          const isUnread = !notification.read_at;
-          let actorName = null;
-          let actorEmail = null;
-          let leaverName = null;
-          let leaverEmail = null;
-          let noteTitle = notification.data?.note_title || "a note";
-
-          // Get actor information based on notification type
-          if (notification.data) {
-            switch (notification.type) {
-              case "invitation":
-                actorName = notification.data.shared_by?.name;
-                actorEmail = notification.data.shared_by?.email;
-                break;
-              case "invitation_sent":
-                actorName = notification.data.invited_user?.name;
-                actorEmail = notification.data.invited_user?.email;
-                break;
-              case "invitation_accepted":
-                actorName = notification.data.accepted_by?.name;
-                actorEmail = notification.data.accepted_by?.email;
-                break;
-              case "invitation_rejected":
-                actorName = notification.data.rejected_by?.name;
-                actorEmail = notification.data.rejected_by?.email;
-                break;
-              case "invitation_cancelled":
-                actorName = notification.data.cancelled_by?.name;
-                actorEmail = notification.data.cancelled_by?.email;
-                break;
-              case "collaboration_removed":
-                actorName = notification.data.removed_by?.name;
-                actorEmail = notification.data.removed_by?.email;
-                break;
-              case "collaborator_left":
-                leaverName = notification.data.leaver?.name;
-                leaverEmail = notification.data.leaver?.email;
-                break;
-            }
-          }
-
-          // Format message based on notification type
-          let formattedMessage = notification.message;
-          const isSelfRemoval =
-            notification.type === "collaboration_removed" &&
-            notification.data?.removed_by?.uuid &&
-            notification.data?.removed_by?.uuid ===
-              (user?.uuid || notification.user_id);
-
-          if (notification.type === "invitation") {
-            const displayName = actorName || actorEmail || "Someone";
-            formattedMessage = `${displayName} invited you to collaborate on "${noteTitle}"`;
-          } else if (notification.type === "invitation_sent") {
-            const displayName = actorName || actorEmail || "Someone";
-            formattedMessage = `You invited ${displayName} to collaborate on "${noteTitle}"`;
-          } else if (notification.type === "invitation_accepted") {
-            const displayName = actorName || actorEmail || "Someone";
-            formattedMessage = `${displayName} accepted your invitation to collaborate on "${noteTitle}"`;
-          } else if (notification.type === "invitation_rejected") {
-            const displayName = actorName || actorEmail || "Someone";
-            formattedMessage = `${displayName} rejected your invitation to collaborate on "${noteTitle}"`;
-          } else if (notification.type === "invitation_cancelled") {
-            const displayName = actorName || actorEmail || "Someone";
-            formattedMessage = `${displayName} cancelled the invitation to collaborate on "${noteTitle}"`;
-          } else if (notification.type === "collaboration_removed") {
-            if (isSelfRemoval) {
-              formattedMessage = `You left collaboration on "${noteTitle}"`;
-            } else {
-              const displayName = actorName || actorEmail || "Someone";
-              formattedMessage = `${displayName} removed you from collaborating on "${noteTitle}"`;
-            }
-          } else if (notification.type === "collaborator_left") {
-            const displayName = leaverName || leaverEmail || "Someone";
-            formattedMessage = `${displayName} left your note "${noteTitle}"`;
-          }
-
-          return (
-            <List.Item className="border-0 px-0 py-2 bg-transparent">
+      <div
+        className={`max-h-[500px] overflow-y-auto scrollbar-thin ${
+          theme === "dark"
+            ? "scrollbar-thumb-gray-700 scrollbar-track-gray-900"
+            : "scrollbar-thumb-gray-300 scrollbar-track-transparent"
+        }`}
+      >
+        <List
+          dataSource={displayedNotifications}
+          loading={loading}
+          className="w-full"
+          locale={{
+            emptyText: (
               <div
-                className={`flex items-start gap-3 w-full rounded-md p-3 transition-all relative shadow-sm ${
-                  theme === "dark"
-                    ? "bg-gray-800 hover:bg-gray-700"
-                    : "bg-white hover:bg-gray-50"
+                className={`text-center py-6 text-base ${
+                  theme === "dark" ? "text-gray-400" : "text-gray-500"
                 }`}
-                style={{ minHeight: 56 }}
               >
+                No notifications
+              </div>
+            ),
+          }}
+          renderItem={(notification) => {
+            const isUnread = !notification.read_at;
+            let actorName = null;
+            let actorEmail = null;
+            let leaverName = null;
+            let leaverEmail = null;
+            let noteTitle = notification.data?.note_title || "a note";
+
+            // Get actor information based on notification type
+            if (notification.data) {
+              switch (notification.type) {
+                case "invitation":
+                  actorName = notification.data.shared_by?.name;
+                  actorEmail = notification.data.shared_by?.email;
+                  break;
+                case "invitation_sent":
+                  actorName = notification.data.invited_user?.name;
+                  actorEmail = notification.data.invited_user?.email;
+                  break;
+                case "invitation_accepted":
+                  actorName = notification.data.accepted_by?.name;
+                  actorEmail = notification.data.accepted_by?.email;
+                  break;
+                case "invitation_rejected":
+                  actorName = notification.data.rejected_by?.name;
+                  actorEmail = notification.data.rejected_by?.email;
+                  break;
+                case "invitation_cancelled":
+                  actorName = notification.data.cancelled_by?.name;
+                  actorEmail = notification.data.cancelled_by?.email;
+                  break;
+                case "collaboration_removed":
+                  actorName = notification.data.removed_by?.name;
+                  actorEmail = notification.data.removed_by?.email;
+                  break;
+                case "collaborator_left":
+                  leaverName = notification.data.leaver?.name;
+                  leaverEmail = notification.data.leaver?.email;
+                  break;
+              }
+            }
+
+            // Format message based on notification type
+            let formattedMessage = notification.message;
+            const isSelfRemoval =
+              notification.type === "collaboration_removed" &&
+              notification.data?.removed_by?.uuid &&
+              notification.data?.removed_by?.uuid ===
+                (user?.uuid || notification.user_id);
+
+            if (notification.type === "invitation") {
+              const displayName = actorName || actorEmail || "Someone";
+              formattedMessage = `${displayName} invited you to collaborate on "${noteTitle}"`;
+            } else if (notification.type === "invitation_sent") {
+              const displayName = actorName || actorEmail || "Someone";
+              formattedMessage = `You invited ${displayName} to collaborate on "${noteTitle}"`;
+            } else if (notification.type === "invitation_accepted") {
+              const displayName = actorName || actorEmail || "Someone";
+              formattedMessage = `${displayName} accepted your invitation to collaborate on "${noteTitle}"`;
+            } else if (notification.type === "invitation_rejected") {
+              const displayName = actorName || actorEmail || "Someone";
+              formattedMessage = `${displayName} rejected your invitation to collaborate on "${noteTitle}"`;
+            } else if (notification.type === "invitation_cancelled") {
+              const displayName = actorName || actorEmail || "Someone";
+              formattedMessage = `${displayName} cancelled the invitation to collaborate on "${noteTitle}"`;
+            } else if (notification.type === "collaboration_removed") {
+              if (isSelfRemoval) {
+                formattedMessage = `You left collaboration on "${noteTitle}"`;
+              } else {
+                const displayName = actorName || actorEmail || "Someone";
+                formattedMessage = `${displayName} removed you from collaborating on "${noteTitle}"`;
+              }
+            } else if (notification.type === "collaborator_left") {
+              const displayName = leaverName || leaverEmail || "Someone";
+              formattedMessage = `${displayName} left your note "${noteTitle}"`;
+            }
+
+            return (
+              <List.Item className="border-0 px-0 py-2 bg-transparent mx-2 overflow-x-hidden">
                 <div
-                  className={`flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full ${
-                    theme === "dark" ? "bg-gray-700" : "bg-gray-100"
+                  className={`flex items-start gap-3 w-full rounded-md p-3 transition-all relative ${
+                    theme === "dark"
+                      ? "bg-gray-800 hover:bg-gray-700 border-gray-700"
+                      : "bg-white hover:bg-gray-100 border-gray-200"
                   }`}
-                  style={{
-                    color: getNotificationColor(notification.type),
-                    fontSize: 18,
-                  }}
+                  style={{ minHeight: 56 }}
                 >
-                  {getNotificationIcon(notification.type)}
-                </div>
-                <div className="flex-1 min-w-0">
                   <div
-                    className={`text-sm font-semibold truncate ${
-                      theme === "dark" ? "text-gray-100" : "text-gray-800"
-                    }`}
-                    style={{ wordBreak: "break-word" }}
-                  >
-                    {notification.title}
-                  </div>
-                  <div
-                    className={`text-xs mt-0.5 truncate-2-lines ${
-                      theme === "dark" ? "text-gray-400" : "text-gray-600"
+                    className={`flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full ${
+                      theme === "dark" ? "bg-gray-700" : "bg-gray-100"
                     }`}
                     style={{
-                      wordBreak: "break-word",
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
+                      color: getNotificationColor(notification.type),
+                      fontSize: 18,
                     }}
                   >
-                    {formattedMessage}
+                    {getNotificationIcon(notification.type)}
                   </div>
-                  {notification.type === "collaborator_left" &&
-                  leaverEmail &&
-                  leaverEmail !== leaverName ? (
+                  <div className="flex-1 min-w-0">
                     <div
-                      className={`text-xs mt-1 ${
-                        theme === "dark" ? "text-gray-400" : "text-gray-500"
+                      className={`text-sm font-semibold truncate ${
+                        theme === "dark" ? "text-gray-100" : "text-gray-800"
                       }`}
                       style={{ wordBreak: "break-word" }}
                     >
-                      From: <span className="font-medium">{leaverEmail}</span>
+                      {notification.title}
                     </div>
-                  ) : isSelfRemoval ? null : (
-                    actorEmail &&
-                    actorEmail !== actorName && (
+                    <div
+                      className={`text-xs mt-0.5 truncate-2-lines ${
+                        theme === "dark" ? "text-gray-400" : "text-gray-600"
+                      }`}
+                      style={{
+                        wordBreak: "break-word",
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                      }}
+                    >
+                      {formattedMessage}
+                    </div>
+                    {notification.type === "collaborator_left" &&
+                    leaverEmail &&
+                    leaverEmail !== leaverName ? (
                       <div
                         className={`text-xs mt-1 ${
                           theme === "dark" ? "text-gray-400" : "text-gray-500"
                         }`}
                         style={{ wordBreak: "break-word" }}
                       >
-                        From: <span className="font-medium">{actorEmail}</span>
+                        From: <span className="font-medium">{leaverEmail}</span>
                       </div>
-                    )
-                  )}
-                  <div className="flex items-center gap-1 mt-2">
-                    {getNotificationActions(notification)}
-                    <Tooltip title="Delete">
-                      <Button
-                        type="text"
-                        size="small"
-                        icon={<DeleteOutlined />}
-                        onClick={() => handleDelete(notification.id)}
-                        className={
-                          theme === "dark"
-                            ? "text-gray-400 hover:text-gray-300"
-                            : "text-gray-500 hover:text-gray-600"
-                        }
-                        style={{ padding: 4, borderRadius: 6 }}
-                      />
-                    </Tooltip>
+                    ) : isSelfRemoval ? null : (
+                      actorEmail &&
+                      actorEmail !== actorName && (
+                        <div
+                          className={`text-xs mt-1 ${
+                            theme === "dark" ? "text-gray-400" : "text-gray-500"
+                          }`}
+                          style={{ wordBreak: "break-word" }}
+                        >
+                          From:{" "}
+                          <span className="font-medium">{actorEmail}</span>
+                        </div>
+                      )
+                    )}
+                    <div className="flex items-center gap-1 mt-2">
+                      {getNotificationActions(notification)}
+                      <Tooltip title="Delete">
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<DeleteOutlined />}
+                          onClick={() => handleDelete(notification.id)}
+                          className={
+                            theme === "dark"
+                              ? "text-gray-400 hover:text-gray-300"
+                              : "text-gray-500 hover:text-gray-600"
+                          }
+                          style={{ padding: 4, borderRadius: 6 }}
+                        />
+                      </Tooltip>
+                    </div>
                   </div>
+                  {isUnread && (
+                    <span
+                      className={`absolute top-2 right-2 w-2 h-2 rounded-full z-10 ${
+                        theme === "dark" ? "bg-blue-400" : "bg-blue-500"
+                      }`}
+                    ></span>
+                  )}
                 </div>
-                {isUnread && (
-                  <span
-                    className={`absolute top-2 right-2 w-2 h-2 rounded-full ${
-                      theme === "dark" ? "bg-blue-400" : "bg-blue-500"
-                    }`}
-                  ></span>
-                )}
-              </div>
-            </List.Item>
-          );
-        }}
-      />
+              </List.Item>
+            );
+          }}
+        />
+      </div>
       {max && notifications.length > max && (
         <div
           className={`p-2 text-center border-t ${
