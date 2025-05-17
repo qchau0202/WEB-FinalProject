@@ -76,12 +76,12 @@ export const noteService = {
     }
   },
 
-  addCollaborator: async (noteUuid, collaboratorData) => {
+  addCollaborator: async (noteUuid, data) => {
     await ensureCsrfToken();
     try {
       const response = await apiClient.post(
         `/notes/${noteUuid}/collaborators`,
-        collaboratorData
+        data
       );
       return response.data;
     } catch (error) {
@@ -93,16 +93,78 @@ export const noteService = {
     }
   },
 
-  removeCollaborator: async (noteUuid, userId) => {
+  acceptCollaboration: async (noteUuid) => {
+    await ensureCsrfToken();
+    try {
+      const response = await apiClient.post(
+        `/notes/${noteUuid}/collaborators/accept`
+      );
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Accept collaboration error:",
+        error.response?.data || error.message
+      );
+      throw error;
+    }
+  },
+
+  declineCollaboration: async (noteUuid) => {
+    await ensureCsrfToken();
+    try {
+      const response = await apiClient.post(
+        `/notes/${noteUuid}/collaborators/decline`
+      );
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Decline collaboration error:",
+        error.response?.data || error.message
+      );
+      throw error;
+    }
+  },
+
+  cancelInvitation: async (noteUuid, userUuid) => {
     await ensureCsrfToken();
     try {
       const response = await apiClient.delete(
-        `/notes/${noteUuid}/collaborators/${userId}`
+        `/notes/${noteUuid}/collaborators/${userUuid}/cancel`
+      );
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Cancel invitation error:",
+        error.response?.data || error.message
+      );
+      throw error;
+    }
+  },
+
+  removeCollaborator: async (noteUuid, userUuid) => {
+    await ensureCsrfToken();
+    try {
+      const response = await apiClient.delete(
+        `/notes/${noteUuid}/collaborators/${userUuid}`
       );
       return response.data;
     } catch (error) {
       console.error(
         "Remove collaborator error:",
+        error.response?.data || error.message
+      );
+      throw error;
+    }
+  },
+
+  getCollaborators: async (noteUuid) => {
+    await ensureCsrfToken();
+    try {
+      const response = await apiClient.get(`/notes/${noteUuid}/collaborators`);
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Get collaborators error:",
         error.response?.data || error.message
       );
       throw error;
@@ -224,6 +286,23 @@ export const noteService = {
     } catch (error) {
       console.error(
         "Verify lock password error:",
+        error.response?.data || error.message
+      );
+      throw error;
+    }
+  },
+
+  updateCollaboratorPermission: async (noteUuid, userUuid, permission) => {
+    await ensureCsrfToken();
+    try {
+      const response = await apiClient.put(
+        `/notes/${noteUuid}/collaborators/${userUuid}`,
+        { permission }
+      );
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Update collaborator permission error:",
         error.response?.data || error.message
       );
       throw error;

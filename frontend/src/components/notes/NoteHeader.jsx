@@ -8,13 +8,15 @@ import {
   UnlockOutlined,
   CheckCircleFilled,
 } from "@ant-design/icons";
-import { AiOutlineUsergroupAdd } from "react-icons/ai";
+import { FaUserGroup } from "react-icons/fa6";
 import { CgSpinner } from "react-icons/cg";
 import { Button, Dropdown, Tooltip, Spin } from "antd";
 import { useNote } from "../../contexts/NotesContext";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useRef, useState, useEffect } from "react";
 import { noteService } from "../../services/noteService";
+import NoteInviteModal from "./NoteInviteModal";
+import NoteCollaboratorsModal from "./NoteCollaboratorsModal";
 
 const formatDate = (dateString) => {
   if (!dateString) return "";
@@ -38,6 +40,8 @@ const NoteHeader = () => {
     onLockStateChange,
   } = useNote();
   const { theme, fontSize, getTitleFontSizeClass, themeClasses } = useTheme();
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showCollaboratorsModal, setShowCollaboratorsModal] = useState(false);
 
   const titleFontSizeClass = getTitleFontSizeClass(fontSize);
 
@@ -58,6 +62,11 @@ const NoteHeader = () => {
       saveTimeout.current = setTimeout(() => setJustSaved(false), 1200);
     }
   }, [note._isSaving]);
+
+  // useEffect(() => {
+  //   console.log("Note data:", note);
+  //   console.log("Collaborators:", JSON.stringify(note.collaborators, null, 2));
+  // }, [note]);
 
   const handleEnableLock = async (e) => {
     e.domEvent?.stopPropagation();
@@ -116,6 +125,11 @@ const NoteHeader = () => {
     items: isDetailView
       ? [
           {
+            key: "invite",
+            label: "Invite Collaborator",
+            onClick: () => setShowInviteModal(true),
+          },
+          {
             key: "lock",
             label: note.lock_feature_enabled
               ? "Disable Lock Feature"
@@ -128,8 +142,8 @@ const NoteHeader = () => {
       : [
           {
             key: "invite",
-            label: "Invite",
-            onClick: (e) => e.domEvent.stopPropagation(),
+            label: "Invite Collaborator",
+            onClick: () => setShowInviteModal(true),
           },
           {
             key: "delete",
@@ -172,14 +186,14 @@ const NoteHeader = () => {
                   }
                   type="text"
                   onClick={() => navigate("/")}
-                  className={`text-lg ${
+                  className={`text-lg hidden md:inline-flex ${
                     theme === "dark" ? "text-gray-200" : "text-gray-600"
                   } ${themeClasses.font[fontSize]}`}
                 />
                 <div
                   className={`text-base ${
                     theme === "dark" ? "text-gray-400" : "text-gray-500"
-                  } flex items-center`}
+                  } flex items-center hidden md:flex`}
                 >
                   <span
                     className={`cursor-pointer ${
@@ -248,18 +262,24 @@ const NoteHeader = () => {
                     />
                   </Tooltip>
                 )}
-                <Tooltip title="Invite" className={themeClasses.font[fontSize]}>
-                  <Button
-                    icon={
-                      <div className={themeClasses.font[fontSize]}>
-                        <AiOutlineUsergroupAdd />
-                      </div>
-                    }
-                    className={`text-lg ${
-                      theme === "dark" ? "text-gray-200" : "text-gray-600"
-                    } ${themeClasses.font[fontSize]}`}
-                  />
-                </Tooltip>
+                {note.collaborators && note.collaborators.length > 0 && (
+                  <Tooltip
+                    title="Collaborators"
+                    className={themeClasses.font[fontSize]}
+                  >
+                    <Button
+                      icon={
+                        <div className={themeClasses.font[fontSize]}>
+                          <FaUserGroup />
+                        </div>
+                      }
+                      onClick={() => setShowCollaboratorsModal(true)}
+                      className={`text-lg ${
+                        theme === "dark" ? "text-gray-200" : "text-gray-600"
+                      } ${themeClasses.font[fontSize]}`}
+                    />
+                  </Tooltip>
+                )}
 
                 <Tooltip title="Delete" className={themeClasses.font[fontSize]}>
                   <Button
@@ -373,6 +393,26 @@ const NoteHeader = () => {
                 </div>
               </div>
             </Tooltip>
+            {note.collaborators && note.collaborators.length > 0 && (
+              <Tooltip
+                title="Collaborators"
+                className={themeClasses.font[fontSize]}
+              >
+                <div
+                  className={`p-1 rounded-full ${
+                    theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                  } cursor-pointer text-blue-400 ${
+                    themeClasses.font[fontSize]
+                  }`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowCollaboratorsModal(true);
+                  }}
+                >
+                  <FaUserGroup />
+                </div>
+              </Tooltip>
+            )}
             {note.lock_feature_enabled && (
               <Tooltip
                 title={note.is_locked ? "Unlock Note" : "Lock Note"}
@@ -387,7 +427,7 @@ const NoteHeader = () => {
                   onClick={handleLockClick}
                 >
                   <div className={themeClasses.font[fontSize]}>
-                    {note.is_locked ?  <LockOutlined />:<UnlockOutlined />}
+                    {note.is_locked ? <LockOutlined /> : <UnlockOutlined />}
                   </div>
                 </div>
               </Tooltip>
@@ -427,6 +467,20 @@ const NoteHeader = () => {
           </div>
         )}
       </div>
+
+      <NoteInviteModal
+        isOpen={showInviteModal}
+        onClose={() => setShowInviteModal(false)}
+        noteUuid={note.uuid}
+        collaborators={note.collaborators}
+      />
+      <NoteCollaboratorsModal
+        isOpen={showCollaboratorsModal}
+        onClose={() => setShowCollaboratorsModal(false)}
+        collaborators={note.collaborators}
+        noteUuid={note.uuid}
+        noteOwnerUuid={note.user_id}
+      />
     </>
   );
 };

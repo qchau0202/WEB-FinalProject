@@ -29,16 +29,24 @@ const NoteLabels = ({ onClick }) => {
   let badgeNeeded = false;
   const plusWidth = 36;
   const badgeWidth = 36;
-  const maxLabels = isDetailView ? 6 : 2;
+  let mobileMaxLabels = 1;
+  let desktopMaxLabels = 6;
+  let isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
   if (isDetailView) {
-    visibleLabels = noteLabels.slice(0, 6);
-    hiddenLabels = noteLabels.slice(6);
-    badgeNeeded = hiddenLabels.length > 0;
+    if (isMobile) {
+      visibleLabels = noteLabels.slice(0, mobileMaxLabels);
+      hiddenLabels = noteLabels.slice(mobileMaxLabels);
+      badgeNeeded = hiddenLabels.length > 0;
+    } else {
+      visibleLabels = noteLabels.slice(0, desktopMaxLabels);
+      hiddenLabels = noteLabels.slice(desktopMaxLabels);
+      badgeNeeded = hiddenLabels.length > 0;
+    }
   } else {
     let usedWidth = 0;
     for (let i = 0; i < noteLabels.length; i++) {
-      if (visibleLabels.length >= maxLabels) break;
+      if (visibleLabels.length >= 2) break;
       if (
         usedWidth +
           LABEL_MAX_WIDTH +
@@ -126,7 +134,7 @@ const NoteLabels = ({ onClick }) => {
 
   return (
     <div
-      className="flex items-center gap-2 min-w-0"
+      className="flex flex-nowrap items-center gap-2 min-w-0 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
       onClick={onClick}
       style={isDetailView ? {} : { maxWidth: CONTAINER_MAX_WIDTH + plusWidth }}
     >
@@ -158,6 +166,7 @@ const NoteLabels = ({ onClick }) => {
                 minWidth: 24,
                 maxWidth: 120,
                 backgroundColor: label.color,
+                flexShrink: 0,
               }}
             >
               <span

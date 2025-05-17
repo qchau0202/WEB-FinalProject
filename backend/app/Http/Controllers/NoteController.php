@@ -27,7 +27,7 @@ class NoteController extends Controller
         // Get notes shared with user
         $sharedNotes = Note::whereHas('collaborators', function ($query) use ($user) {
             $query->where('user_uuid', $user->uuid)
-                  ->where('is_accepted', true);
+                  ->where('status', 'accepted');
         })->with(['labels', 'collaborators', 'user'])
           ->orderBy('updated_at', 'desc')
           ->get();
@@ -134,7 +134,7 @@ class NoteController extends Controller
 
         // Check if user has permission to edit
         if ($note->user_id !== $user->uuid && 
-            !$note->collaborators()->where('user_uuid', $user->uuid)->where('is_accepted', true)->exists()) {
+            !$note->collaborators()->where('user_uuid', $user->uuid)->where('status', 'accepted')->exists()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -279,7 +279,8 @@ class NoteController extends Controller
 
         $note->collaborators()->attach($collaborator->uuid, [
             'permission' => $request->permission,
-            'is_accepted' => false
+            'status' => 'pending',
+            'shared_by' => $user->uuid
         ]);
 
         return response()->json([

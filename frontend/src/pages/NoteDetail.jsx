@@ -75,132 +75,20 @@ const NoteDetail = () => {
     <div
       className={`${
         theme === "dark" ? "bg-gray-900" : "bg-gray-50"
-      } min-h-screen p-6`}
+      } flex flex-col h-screen min-h-0 overflow-y-auto p-0`}
     >
-      <Note
-        note={note}
-        onUpdate={updateNote}
-        onDelete={deleteNote}
-        viewMode="grid"
-        isDetailView={true}
-      />
+      <div className="flex-1 min-h-0 p-6">
+        <Note
+          note={note}
+          onUpdate={updateNote}
+          onDelete={deleteNote}
+          viewMode="grid"
+          isDetailView={true}
+          hideBottomNav={true}
+        />
+      </div>
     </div>
   );
 };
 
 export default NoteDetail;
-// import { useEffect, useState } from "react";
-// import { useParams, useNavigate } from "react-router-dom";
-// import { useNotes } from "../contexts/NotesContext";
-// import Note from "../components/notes/Note";
-// import { Spin } from "antd";
-// import toast from "react-hot-toast";
-
-// const NoteDetail = () => {
-//   const { uuid } = useParams();
-//   const navigate = useNavigate();
-//   const { notes, loading, updateNote, deleteNote, fetchNotes } = useNotes();
-//   const [note, setNote] = useState(null);
-
-//   useEffect(() => {
-//     const fetchNote = async () => {
-//       try {
-//         await fetchNotes();
-//         const foundNote = notes.find((n) => n.uuid === uuid);
-//         if (foundNote) {
-//           setNote(foundNote);
-//         } else {
-//           toast.error("Note not found");
-//           navigate("/");
-//         }
-//       } catch (error) {
-//         toast.error("Failed to fetch note");
-//         navigate("/");
-//       }
-//     };
-
-//     fetchNote();
-//   }, [uuid, fetchNotes, notes, navigate]);
-
-//   const handleUpdate = async (updatedData) => {
-//     try {
-//       await updateNote(uuid, { ...note, ...updatedData });
-//       setNote((prev) => ({ ...prev, ...updatedData }));
-//     } catch (error) {
-//       toast.error("Failed to update note");
-//     }
-//   };
-
-//   const handleDelete = async () => {
-//     try {
-//       await deleteNote(uuid);
-//       navigate("/");
-//     } catch (error) {
-//       toast.error("Failed to delete note");
-//     }
-//   };
-
-//   const handlePin = async () => {
-//     try {
-//       await updateNote(uuid, {
-//         ...note,
-//         isPinned: !note.isPinned,
-//         pinnedAt: !note.isPinned ? new Date().toISOString() : null,
-//       });
-//       setNote((prev) => ({
-//         ...prev,
-//         isPinned: !prev.isPinned,
-//         pinnedAt: !prev.isPinned ? new Date().toISOString() : null,
-//       }));
-//     } catch (error) {
-//       toast.error("Failed to pin/unpin note");
-//     }
-//   };
-
-//   const handleLock = async (password, lockFeatureEnabled, isLocked) => {
-//     try {
-//       await updateNote(uuid, {
-//         ...note,
-//         lockStatus: {
-//           isLocked,
-//           password: lockFeatureEnabled ? password : null,
-//         },
-//         lockFeatureEnabled,
-//       });
-//       setNote((prev) => ({
-//         ...prev,
-//         lockStatus: {
-//           isLocked,
-//           password: lockFeatureEnabled ? password : null,
-//         },
-//         lockFeatureEnabled,
-//       }));
-//     } catch (error) {
-//       toast.error("Failed to update note lock status");
-//     }
-//   };
-
-//   if (loading || !note) {
-//     return (
-//       <div className="flex items-center justify-center h-screen">
-//         <Spin size="large" />
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div className="p-4 md:p-6 lg:p-8 mx-auto max-w-5xl">
-//       <Note
-//         note={note}
-//         onUpdate={handleUpdate}
-//         onDelete={handleDelete}
-//         onPin={handlePin}
-//         onLock={handleLock}
-//         viewMode="detail"
-//         isDetailView={true}
-//       />
-//     </div>
-//   );
-// };
-
-// export default NoteDetail;

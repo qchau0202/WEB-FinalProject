@@ -73,7 +73,7 @@ const NotePinned = ({ note, handleNoteClick, togglePinNote }) => {
   return (
     <div
       key={note.uuid} // Use uuid for consistency
-      className={`flex-none w-64 rounded-lg shadow-sm border p-4 hover:shadow-md transition-all duration-200 cursor-pointer ${
+      className={`flex-none w-full rounded-lg shadow-sm border p-4 hover:shadow-md transition-all duration-200 cursor-pointer ${
         theme === "dark"
           ? "bg-gray-800 border-gray-700 hover:bg-gray-700"
           : "bg-white border-gray-200 hover:bg-gray-100"

@@ -6,6 +6,8 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\LabelController;
 use App\Http\Controllers\NoteAttachmentController;
+use App\Http\Controllers\NoteCollaboratorController;
+use App\Http\Controllers\NotificationController;
 
 // Public routes
 Route::post('/login', [AuthController::class, 'login']);
@@ -27,6 +29,12 @@ Route::middleware('auth')->group(function () {
     Route::put('/user/password', [UserController::class, 'updatePassword']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
+    // Notification routes
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::put('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    Route::put('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
+
     // Note routes
     Route::prefix('notes')->group(function () {
         // Basic CRUD operations
@@ -38,8 +46,14 @@ Route::middleware('auth')->group(function () {
 
         // Note collaboration
         Route::prefix('{uuid}/collaborators')->group(function () {
-            Route::post('/', [NoteController::class, 'addCollaborator']);
-            Route::delete('/{userId}', [NoteController::class, 'removeCollaborator']);
+            Route::get('/', [NoteCollaboratorController::class, 'getCollaborators']);
+            Route::post('/', [NoteCollaboratorController::class, 'addCollaborator']);
+            Route::delete('/{userId}', [NoteCollaboratorController::class, 'removeCollaborator']);
+            Route::put('/{userId}', [NoteCollaboratorController::class, 'updatePermission']);
+            Route::post('/accept', [NoteCollaboratorController::class, 'acceptCollaboration']);
+            Route::post('/reject', [NoteCollaboratorController::class, 'rejectCollaboration']);
+            Route::post('/decline', [NoteCollaboratorController::class, 'declineCollaboration']);
+            Route::delete('/{userId}/cancel', [NoteCollaboratorController::class, 'cancelInvitation']);
         });
 
         // Note attachments

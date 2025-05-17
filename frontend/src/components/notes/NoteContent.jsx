@@ -16,15 +16,27 @@ const NoteContent = () => {
   } = useNote();
   const { fontSize, themeClasses } = useTheme();
 
+  // Handler for file/image input
+  const onFileChange = (e) => {
+    e.stopPropagation();
+    const files = Array.from(e.target.files);
+    if (files.length > 0) handleFileUpload(files);
+    e.target.value = null; // reset input
+  };
+
   return (
-    <div className={`flex flex-col ${isDetailView ? "flex-1" : ""}`}>
+    <div className={`flex flex-col flex-1 min-h-0`}>
       <textarea
         value={content}
         onChange={(e) => {
           setContent(e.target.value);
           handleInput(title, e.target.value);
         }}
-        className={`px-5 bg-transparent border-none focus:outline-none w-full resize-none ${themeClasses.text.primary} ${themeClasses.font[fontSize]}`}
+        className={`px-5 bg-transparent border-none focus:outline-none w-full resize-none ${
+          themeClasses.text.primary
+        } ${themeClasses.font[fontSize]} ${
+          isDetailView ? "min-h-[200px] max-h-[40vh] overflow-y-auto" : ""
+        }`}
         placeholder="Write your note here..."
         rows={
           isDetailView
@@ -37,35 +49,28 @@ const NoteContent = () => {
         }
         style={{
           whiteSpace: "pre-wrap",
-          minHeight: isDetailView
-            ? "200px"
-            : viewMode === "list"
-            ? "80px"
-            : "auto",
           maxWidth: "100%",
-          overflow: "hidden",
           wordBreak: "break-word",
         }}
         onClick={(e) => e.stopPropagation()}
       />
       <div
-        className={`flex items-center px-5 py-3 border-t ${
+        className={`flex flex-col gap-2 md:flex-row md:items-center px-5 py-3 border-t ${
           themeClasses.border.primary
         } ${themeClasses.bg.secondary} rounded-b-lg ${
           isDetailView ? "p-6" : ""
         } overflow-hidden`}
       >
         <div
-          className="flex items-center"
+          className={`flex items-center overflow-x-auto md:overflow-visible mb-2`}
           style={
             isDetailView ? {} : { maxWidth: 220, minWidth: 120, flexShrink: 0 }
           }
         >
           <NoteLabels />
         </div>
-        <div className="flex-grow" />
-        <div className="flex-shrink-0 flex gap-2 ml-2">
-          <Tooltip title="Add image">
+        <div className="flex-shrink-0 flex gap-2 md:ml-2">
+          <Tooltip title="Add image(s)">
             <label>
               <div
                 className={`p-1 rounded-full ${themeClasses.bg.hover} ${themeClasses.text.light} cursor-pointer`}
@@ -78,16 +83,13 @@ const NoteContent = () => {
                 type="file"
                 accept="image/*"
                 className="hidden"
-                onChange={(e) => {
-                  e.stopPropagation();
-                  const file = e.target.files[0];
-                  handleFileUpload(file);
-                }}
+                multiple
+                onChange={onFileChange}
                 onClick={(e) => e.stopPropagation()}
               />
             </label>
           </Tooltip>
-          <Tooltip title="Add file">
+          <Tooltip title="Add file(s)">
             <label>
               <div
                 className={`p-1 rounded-full ${themeClasses.bg.hover} ${themeClasses.text.light} cursor-pointer`}
@@ -99,11 +101,8 @@ const NoteContent = () => {
               <input
                 type="file"
                 className="hidden"
-                onChange={(e) => {
-                  e.stopPropagation();
-                  const file = e.target.files[0];
-                  handleFileUpload(file);
-                }}
+                multiple
+                onChange={onFileChange}
                 onClick={(e) => e.stopPropagation()}
               />
             </label>

@@ -6,10 +6,9 @@ import { useTheme } from "../../contexts/ThemeContext";
 const NotePinnedSection = ({
   isPinnedExpanded,
   setIsPinnedExpanded,
-  displayedPinnedNotes,
+  pinnedNotes,
   handleNoteClick,
   togglePinNote,
-  remainingPinnedCount,
 }) => {
   const { theme } = useTheme();
 
@@ -23,7 +22,7 @@ const NotePinnedSection = ({
         >
           Pinned Notes
         </h2>
-        {displayedPinnedNotes.length > 4 && (
+        {pinnedNotes.length > 0 && (
           <Button
             type="text"
             onClick={() => setIsPinnedExpanded(!isPinnedExpanded)}
@@ -32,28 +31,26 @@ const NotePinnedSection = ({
             }`}
           >
             {isPinnedExpanded ? (
-              <>
-                Show Less <UpOutlined />
-              </>
+              <UpOutlined />
             ) : (
-              <>
-                Show {remainingPinnedCount} More <DownOutlined />
-              </>
+              <DownOutlined />
             )}
           </Button>
         )}
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        {displayedPinnedNotes.map((note) => (
-          <div key={note.uuid} className="w-full">
-            <NotePinned
-              note={note}
-              handleNoteClick={handleNoteClick}
-              togglePinNote={togglePinNote}
-            />
-          </div>
-        ))}
-      </div>
+      {isPinnedExpanded && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {pinnedNotes.map((note) => (
+            <div key={note.uuid} className="w-full">
+              <NotePinned
+                note={note}
+                handleNoteClick={handleNoteClick}
+                togglePinNote={togglePinNote}
+              />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

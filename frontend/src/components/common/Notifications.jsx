@@ -1,195 +1,491 @@
-import { Button, Menu, Tag } from "antd";
-import { MdNotifications } from "react-icons/md";
+import { useState, useEffect } from "react";
+import { List, Button, Badge, Tooltip } from "antd";
 import {
+  CheckOutlined,
+  CloseOutlined,
+  DeleteOutlined,
   CheckCircleOutlined,
-  CloseCircleOutlined,
-  ClockCircleOutlined,
   UserAddOutlined,
-  ExclamationCircleFilled,
+  UserDeleteOutlined,
+  MailOutlined,
+  CloseCircleOutlined,
+  BellOutlined,
 } from "@ant-design/icons";
 import { useTheme } from "../../contexts/ThemeContext";
+import { notificationService } from "../../services/notificationService";
+import { noteService } from "../../services/noteService";
+import { toast } from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 
-const notificationColors = {
-  info: "text-blue-500",
-  success: "text-green-500",
-  warning: "text-yellow-500",
-  error: "text-red-500",
-};
-
-const notificationIcons = {
-  info: <MdNotifications className="text-blue-500 text-lg" />,
-  success: <CheckCircleOutlined className="text-green-500 text-lg" />,
-  warning: <ClockCircleOutlined className="text-yellow-500 text-lg" />,
-  error: <CloseCircleOutlined className="text-red-500 text-lg" />,
-  invite: <UserAddOutlined className="text-blue-500 text-lg" />,
-  delete: <CloseCircleOutlined className="text-red-500 text-lg" />,
-};
-
-const Notifications = ({ notifications = [], max = 3, onShowMore }) => {
+const Notifications = ({ max, onShowMore }) => {
   const { theme } = useTheme();
-  const showMore = notifications.length > max;
-  const visibleNotifications = notifications.slice(0, max);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [invalidInvitations, setInvalidInvitations] = useState({});
 
-  const handleAccept = (id) => {
-    // Placeholder for accept logic
-    console.log("Accepted invitation for notification id:", id);
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true);
+      const response = await notificationService.getNotifications();
+      setNotifications(Array.isArray(response.data) ? response.data : []);
+    } catch {
+      toast.error("Failed to fetch notifications");
+    } finally {
+      setLoading(false);
+    }
   };
-  const handleDecline = (id) => {
-    // Placeholder for decline logic
-    console.log("Declined invitation for notification id:", id);
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleAcceptInvitation = async (notification) => {
+    try {
+      await noteService.acceptCollaboration(notification.data.note_uuid);
+      await notificationService.markAsRead(notification.id);
+      await fetchNotifications();
+      toast.success("Invitation accepted");
+      navigate("/shared");
+    } catch (err) {
+      if (
+        err?.response?.data?.message === "No pending invitation found" ||
+        err?.response?.data?.message === "Unauthorized"
+      ) {
+        setInvalidInvitations((prev) => ({ ...prev, [notification.id]: true }));
+        await notificationService.markAsRead(notification.id);
+        await fetchNotifications();
+        toast.error("This invitation is no longer valid.");
+      } else {
+        toast.error("Failed to accept invitation");
+      }
+    }
   };
+
+  const handleDeclineInvitation = async (notification) => {
+    try {
+      await noteService.declineCollaboration(notification.data.note_uuid);
+      await notificationService.markAsRead(notification.id);
+      await fetchNotifications();
+      toast.success("Invitation declined");
+    } catch (err) {
+      if (
+        err?.response?.data?.message === "No pending invitation found" ||
+        err?.response?.data?.message === "Unauthorized"
+      ) {
+        setInvalidInvitations((prev) => ({ ...prev, [notification.id]: true }));
+        await notificationService.markAsRead(notification.id);
+        await fetchNotifications();
+        toast.error("This invitation is no longer valid.");
+      } else {
+        toast.error("Failed to decline invitation");
+      }
+    }
+  };
+
+  const handleCancelInvitation = async (notification) => {
+    try {
+      await noteService.cancelInvitation(
+        notification.data.note_uuid,
+        notification.data.invited_user
+      );
+      await notificationService.markAsRead(notification.id);
+      await fetchNotifications();
+      toast.success("Invitation cancelled");
+    } catch (err) {
+      if (err?.response?.data?.message === "No pending invitation found") {
+        toast.error("This invitation has already been accepted or declined.");
+        await fetchNotifications();
+      } else {
+        toast.error("Failed to cancel invitation");
+      }
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await notificationService.deleteNotification(id);
+      await fetchNotifications();
+      toast.success("Notification deleted");
+    } catch {
+      toast.error("Failed to delete notification");
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await notificationService.markAllAsRead();
+      await fetchNotifications();
+      toast.success("All notifications marked as read");
+    } catch {
+      toast.error("Failed to mark all notifications as read");
+    }
+  };
+
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case "invitation":
+        return <UserAddOutlined />;
+      case "invitation_sent":
+        return <MailOutlined />;
+      case "invitation_accepted":
+        return <CheckCircleOutlined />;
+      case "invitation_rejected":
+      case "invitation_cancelled":
+        return <CloseCircleOutlined />;
+      case "collaboration_removed":
+        return <UserDeleteOutlined />;
+      default:
+        return <BellOutlined />;
+    }
+  };
+
+  const getNotificationColor = (type) => {
+    switch (type) {
+      case "invitation":
+      case "invitation_sent":
+        return theme === "dark" ? "#60a5fa" : "#1890ff";
+      case "invitation_accepted":
+        return theme === "dark" ? "#34d399" : "#52c41a";
+      case "invitation_rejected":
+      case "invitation_cancelled":
+      case "collaboration_removed":
+        return theme === "dark" ? "#f87171" : "#ff4d4f";
+      default:
+        return theme === "dark" ? "#9ca3af" : "#6b7280";
+    }
+  };
+
+  const getNotificationActions = (notification) => {
+    const isHandled = !!notification.read_at;
+    const isInvalid = invalidInvitations[notification.id];
+    const isPending = notification.data?.status === "pending";
+    switch (notification.type) {
+      case "invitation":
+        return (
+          <>
+            <Tooltip
+              title={
+                isHandled || isInvalid
+                  ? "This invitation is no longer valid"
+                  : "Accept"
+              }
+            >
+              <Button
+                type="text"
+                size="small"
+                icon={<CheckOutlined />}
+                onClick={() => handleAcceptInvitation(notification)}
+                className="text-green-500 hover:text-green-600"
+                style={{ padding: 4, borderRadius: 6 }}
+                disabled={isHandled || isInvalid}
+              />
+            </Tooltip>
+            <Tooltip
+              title={
+                isHandled || isInvalid
+                  ? "This invitation is no longer valid"
+                  : "Decline"
+              }
+            >
+              <Button
+                type="text"
+                size="small"
+                icon={<CloseOutlined />}
+                onClick={() => handleDeclineInvitation(notification)}
+                className={
+                  theme === "dark"
+                    ? "text-gray-400 hover:text-gray-300"
+                    : "text-gray-500 hover:text-gray-600"
+                }
+                style={{ padding: 4, borderRadius: 6 }}
+                disabled={isHandled || isInvalid}
+              />
+            </Tooltip>
+          </>
+        );
+      case "invitation_sent":
+        return (
+          <Tooltip
+            title={
+              isHandled
+                ? "Already handled"
+                : isPending
+                ? "Cancel"
+                : "No longer pending"
+            }
+          >
+            <Button
+              type="text"
+              size="small"
+              icon={<CloseOutlined />}
+              onClick={() => handleCancelInvitation(notification)}
+              className={
+                theme === "dark"
+                  ? "text-gray-400 hover:text-gray-300"
+                  : "text-gray-500 hover:text-gray-600"
+              }
+              style={{ padding: 4, borderRadius: 6 }}
+              disabled={isHandled || !isPending}
+            />
+          </Tooltip>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const displayedNotifications = max
+    ? Array.isArray(notifications)
+      ? notifications.slice(0, max)
+      : []
+    : Array.isArray(notifications)
+    ? notifications
+    : [];
 
   return (
-    <Menu
-      className={`w-80 ${theme === "dark" ? "bg-gray-800" : "bg-white"} ${
-        theme === "dark"
-          ? "[&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-gray-700 [&::-webkit-scrollbar-thumb]:bg-gray-600 [&::-webkit-scrollbar-thumb]:rounded-full"
-          : "[&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full"
-      }`}
-      style={{ maxHeight: 400, overflowY: "auto", overflowX: "hidden" }}
+    <div
+      className={`notelit-notifications max-h-96 overflow-y-auto overflow-x-hidden w-[320px]`}
     >
-      {notifications.length === 0 ? (
-        <Menu.Item
-          disabled
-          className={theme === "dark" ? "text-gray-400" : "text-gray-500"}
-        >
-          No notifications
-        </Menu.Item>
-      ) : (
-        <>
-          {visibleNotifications.map((n) => (
-            <Menu.Item key={n.id} className="!p-3 !min-h-0">
-              <div className="flex items-start gap-3">
-                <span className={`mt-1 ${notificationColors[n.status]}`}>
-                  {notificationIcons[n.status] ||
-                    notificationIcons[n.type] ||
-                    notificationIcons.info}
-                </span>
+      <div
+        className={`px-3 py-2 border-b ${
+          theme === "dark" ? "border-gray-700" : "border-gray-200"
+        }`}
+      >
+        <div className="flex justify-between items-center">
+          <h3
+            className={`text-base font-semibold ${
+              theme === "dark" ? "text-gray-100" : "text-gray-800"
+            }`}
+          >
+            Notifications
+          </h3>
+          {notifications.length > 0 && (
+            <Button
+              type="link"
+              onClick={handleMarkAllAsRead}
+              className={`text-sm ${
+                theme === "dark" ? "text-blue-400" : "text-blue-500"
+              }`}
+            >
+              Mark all as read
+            </Button>
+          )}
+        </div>
+      </div>
+      <List
+        dataSource={displayedNotifications}
+        loading={loading}
+        className="w-full"
+        locale={{
+          emptyText: (
+            <div
+              className={`text-center py-6 text-base ${
+                theme === "dark" ? "text-gray-400" : "text-gray-500"
+              }`}
+            >
+              No notifications
+            </div>
+          ),
+        }}
+        renderItem={(notification) => {
+          const isUnread = !notification.read_at;
+          let actorName = null;
+          let actorEmail = null;
+          let leaverName = null;
+          let leaverEmail = null;
+          let noteTitle = notification.data?.note_title || "a note";
+
+          // Get actor information based on notification type
+          if (notification.data) {
+            switch (notification.type) {
+              case "invitation":
+                actorName = notification.data.shared_by?.name;
+                actorEmail = notification.data.shared_by?.email;
+                break;
+              case "invitation_sent":
+                actorName = notification.data.invited_user?.name;
+                actorEmail = notification.data.invited_user?.email;
+                break;
+              case "invitation_accepted":
+                actorName = notification.data.accepted_by?.name;
+                actorEmail = notification.data.accepted_by?.email;
+                break;
+              case "invitation_rejected":
+                actorName = notification.data.rejected_by?.name;
+                actorEmail = notification.data.rejected_by?.email;
+                break;
+              case "invitation_cancelled":
+                actorName = notification.data.cancelled_by?.name;
+                actorEmail = notification.data.cancelled_by?.email;
+                break;
+              case "collaboration_removed":
+                actorName = notification.data.removed_by?.name;
+                actorEmail = notification.data.removed_by?.email;
+                break;
+              case "collaborator_left":
+                leaverName = notification.data.leaver?.name;
+                leaverEmail = notification.data.leaver?.email;
+                break;
+            }
+          }
+
+          // Format message based on notification type
+          let formattedMessage = notification.message;
+          const isSelfRemoval =
+            notification.type === "collaboration_removed" &&
+            notification.data?.removed_by?.uuid &&
+            notification.data?.removed_by?.uuid ===
+              (user?.uuid || notification.user_id);
+
+          if (notification.type === "invitation") {
+            const displayName = actorName || actorEmail || "Someone";
+            formattedMessage = `${displayName} invited you to collaborate on "${noteTitle}"`;
+          } else if (notification.type === "invitation_sent") {
+            const displayName = actorName || actorEmail || "Someone";
+            formattedMessage = `You invited ${displayName} to collaborate on "${noteTitle}"`;
+          } else if (notification.type === "invitation_accepted") {
+            const displayName = actorName || actorEmail || "Someone";
+            formattedMessage = `${displayName} accepted your invitation to collaborate on "${noteTitle}"`;
+          } else if (notification.type === "invitation_rejected") {
+            const displayName = actorName || actorEmail || "Someone";
+            formattedMessage = `${displayName} rejected your invitation to collaborate on "${noteTitle}"`;
+          } else if (notification.type === "invitation_cancelled") {
+            const displayName = actorName || actorEmail || "Someone";
+            formattedMessage = `${displayName} cancelled the invitation to collaborate on "${noteTitle}"`;
+          } else if (notification.type === "collaboration_removed") {
+            if (isSelfRemoval) {
+              formattedMessage = `You left collaboration on "${noteTitle}"`;
+            } else {
+              const displayName = actorName || actorEmail || "Someone";
+              formattedMessage = `${displayName} removed you from collaborating on "${noteTitle}"`;
+            }
+          } else if (notification.type === "collaborator_left") {
+            const displayName = leaverName || leaverEmail || "Someone";
+            formattedMessage = `${displayName} left your note "${noteTitle}"`;
+          }
+
+          return (
+            <List.Item className="border-0 px-0 py-2 bg-transparent">
+              <div
+                className={`flex items-start gap-3 w-full rounded-md p-3 transition-all relative shadow-sm ${
+                  theme === "dark"
+                    ? "bg-gray-800 hover:bg-gray-700"
+                    : "bg-white hover:bg-gray-50"
+                }`}
+                style={{ minHeight: 56 }}
+              >
+                <div
+                  className={`flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full ${
+                    theme === "dark" ? "bg-gray-700" : "bg-gray-100"
+                  }`}
+                  style={{
+                    color: getNotificationColor(notification.type),
+                    fontSize: 18,
+                  }}
+                >
+                  {getNotificationIcon(notification.type)}
+                </div>
                 <div className="flex-1 min-w-0">
                   <div
-                    className={`font-semibold text-sm mb-1 ${
+                    className={`text-sm font-semibold truncate ${
                       theme === "dark" ? "text-gray-100" : "text-gray-800"
                     }`}
+                    style={{ wordBreak: "break-word" }}
                   >
-                    {n.title}
+                    {notification.title}
                   </div>
                   <div
-                    className={`text-xs mb-1 whitespace-normal break-words ${
-                      theme === "dark" ? "text-gray-400" : "text-gray-500"
+                    className={`text-xs mt-0.5 truncate-2-lines ${
+                      theme === "dark" ? "text-gray-400" : "text-gray-600"
                     }`}
+                    style={{
+                      wordBreak: "break-word",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                    }}
                   >
-                    {n.message}
+                    {formattedMessage}
                   </div>
-                  <div
-                    className={`text-xs mb-1 ${
-                      theme === "dark" ? "text-gray-500" : "text-gray-400"
-                    }`}
-                  >
-                    {n.timestamp && new Date(n.timestamp).toLocaleString()}
+                  {notification.type === "collaborator_left" &&
+                  leaverEmail &&
+                  leaverEmail !== leaverName ? (
+                    <div
+                      className={`text-xs mt-1 ${
+                        theme === "dark" ? "text-gray-400" : "text-gray-500"
+                      }`}
+                      style={{ wordBreak: "break-word" }}
+                    >
+                      From: <span className="font-medium">{leaverEmail}</span>
+                    </div>
+                  ) : isSelfRemoval ? null : (
+                    actorEmail &&
+                    actorEmail !== actorName && (
+                      <div
+                        className={`text-xs mt-1 ${
+                          theme === "dark" ? "text-gray-400" : "text-gray-500"
+                        }`}
+                        style={{ wordBreak: "break-word" }}
+                      >
+                        From: <span className="font-medium">{actorEmail}</span>
+                      </div>
+                    )
+                  )}
+                  <div className="flex items-center gap-1 mt-2">
+                    {getNotificationActions(notification)}
+                    <Tooltip title="Delete">
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<DeleteOutlined />}
+                        onClick={() => handleDelete(notification.id)}
+                        className={
+                          theme === "dark"
+                            ? "text-gray-400 hover:text-gray-300"
+                            : "text-gray-500 hover:text-gray-600"
+                        }
+                        style={{ padding: 4, borderRadius: 6 }}
+                      />
+                    </Tooltip>
                   </div>
-                  {/* Invitation-pending actions (incoming/outgoing) */}
-                  {n.type === "invitation-pending" &&
-                    n.direction === "incoming" && (
-                      <div className="flex mt-2 gap-2">
-                        <Button
-                          type="primary"
-                          size="small"
-                          onClick={() => handleAccept(n.id)}
-                        >
-                          Accept
-                        </Button>
-                        <Button
-                          danger
-                          size="small"
-                          onClick={() => handleDecline(n.id)}
-                        >
-                          Decline
-                        </Button>
-                      </div>
-                    )}
-                  {n.type === "invitation-pending" &&
-                    n.direction === "outgoing" && (
-                      <div className="flex mt-2">
-                        <Tag color="gold" className="text-xs px-2 py-0.5">
-                          Pending
-                        </Tag>
-                      </div>
-                    )}
                 </div>
+                {isUnread && (
+                  <span
+                    className={`absolute top-2 right-2 w-2 h-2 rounded-full ${
+                      theme === "dark" ? "bg-blue-400" : "bg-blue-500"
+                    }`}
+                  ></span>
+                )}
               </div>
-            </Menu.Item>
-          ))}
-          {showMore && (
-            <Menu.Item key="show-more" className="!p-3 !min-h-0 text-center">
-              <button
-                className={`text-sm hover:underline ${
-                  theme === "dark"
-                    ? "text-blue-400 hover:text-blue-300"
-                    : "text-blue-500 hover:text-blue-600"
-                }`}
-                onClick={onShowMore}
-                style={{
-                  outline: "none",
-                  background: "none",
-                  border: 0,
-                  cursor: "pointer",
-                }}
-              >
-                Show more
-              </button>
-            </Menu.Item>
-          )}
-        </>
+            </List.Item>
+          );
+        }}
+      />
+      {max && notifications.length > max && (
+        <div
+          className={`p-2 text-center border-t ${
+            theme === "dark" ? "border-gray-700" : "border-gray-200"
+          }`}
+        >
+          <Button
+            type="link"
+            onClick={onShowMore}
+            className={`text-sm ${
+              theme === "dark" ? "text-blue-400" : "text-blue-500"
+            }`}
+          >
+            Show all notifications
+          </Button>
+        </div>
       )}
-    </Menu>
+    </div>
   );
 };
 
 export default Notifications;
-// import React from "react";
-// import { List, Button, Typography } from "antd";
-// import { CloseOutlined } from "@ant-design/icons";
-
-// const { Text } = Typography;
-
-// const Notifications = ({ notifications, showAll, onShowMore, onClose }) => {
-//   const displayNotifications = showAll
-//     ? notifications
-//     : notifications.slice(0, 5);
-
-//   return (
-//     <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg z-50">
-//       <div className="p-4 border-b flex justify-between items-center">
-//         <Text strong>Notifications</Text>
-//         <Button
-//           type="text"
-//           icon={<CloseOutlined />}
-//           onClick={onClose}
-//           className="hover:bg-gray-100"
-//         />
-//       </div>
-//       <List
-//         dataSource={displayNotifications}
-//         renderItem={(notification) => (
-//           <List.Item className="px-4 py-2 hover:bg-gray-50">
-//             <div className="w-full">
-//               <Text>{notification.message}</Text>
-//               <Text type="secondary" className="block text-xs">
-//                 {new Date(notification.timestamp).toLocaleString()}
-//               </Text>
-//             </div>
-//           </List.Item>
-//         )}
-//       />
-//       {notifications.length > 5 && !showAll && (
-//         <div className="p-2 border-t text-center">
-//           <Button type="link" onClick={onShowMore}>
-//             Show More
-//           </Button>
-//         </div>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default Notifications;

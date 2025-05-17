@@ -12,8 +12,9 @@ return new class extends Migration
             $table->id();
             $table->foreignUuid('note_uuid')->constrained('notes', 'uuid')->onDelete('cascade');
             $table->foreignUuid('user_uuid')->constrained('users', 'uuid')->onDelete('cascade');
+            $table->foreignUuid('shared_by')->constrained('users', 'uuid')->onDelete('cascade');
             $table->enum('permission', ['read', 'write'])->default('read');
-            $table->boolean('is_accepted')->default(false);
+            $table->enum('status', ['pending', 'accepted', 'rejected'])->default('pending');
             $table->timestamp('accepted_at')->nullable();
             $table->timestamps();
 

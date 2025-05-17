@@ -1,4 +1,4 @@
-import apiClient, { ensureCsrfToken } from "./apiClient";
+import apiClient, { ensureCsrfToken, clearCsrfToken } from "./apiClient";
 
 export const authService = {
   login: async (credentials) => {
@@ -67,6 +67,7 @@ export const authService = {
     await ensureCsrfToken();
     try {
       const response = await apiClient.post("/logout");
+      clearCsrfToken();
       return response.data;
     } catch (error) {
       console.error("Logout error:", error.response?.data || error.message);

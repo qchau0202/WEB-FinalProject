@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import useNoteManagement from "../hooks/useNoteManagement";
 import Note from "../components/notes/Note";
 import NoteCreateCard from "../components/notes/NoteCreateCard";
-import { Empty, Spin, message } from "antd";
+import { Empty, Spin } from "antd";
 import { useLabel } from "../contexts/LabelsContext";
 import { useNavigate } from "react-router-dom";
 import notificationsData from "../mock-data/notifications";
@@ -44,7 +44,6 @@ const Home = () => {
         setNotes(allNotes);
       } catch (error) {
         console.error("Failed to fetch notes:", error);
-        message.error("Failed to load notes. Please refresh the page.");
       }
     };
 
@@ -64,11 +63,6 @@ const Home = () => {
     selectedLabel,
     showPinnedOnly: true,
   });
-
-  const displayedPinnedNotes = isPinnedExpanded
-    ? pinnedNotes
-    : pinnedNotes.slice(0, 4);
-  const remainingPinnedCount = Math.max(0, pinnedNotes.length - 4);
 
   const getLabelName = () => {
     if (!selectedLabel) return "All Notes";
@@ -95,23 +89,25 @@ const Home = () => {
       <div className="p-4 md:p-6 lg:p-8 mx-auto">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <h1
-            className={`text-2xl md:text-3xl font-bold truncate ${
+            className={`text-2xl md:text-3xl font-bold truncate flex-1 min-w-0 ${
               theme === "dark" ? "text-gray-100" : "text-gray-800"
             }`}
           >
             {getLabelName()}
           </h1>
-          <FunctionBar
-            onSearch={setSearchQuery}
-            onSort={setSortBy}
-            onViewModeChange={setViewMode}
-            notifications={notifications}
-            showAllNotifications={showAllNotifications}
-            setShowAllNotifications={setShowAllNotifications}
-            notificationVisible={notificationVisible}
-            setNotificationVisible={setNotificationVisible}
-            handleShowMore={handleShowMore}
-          />
+          <div className="flex-shrink-0">
+            <FunctionBar
+              onSearch={setSearchQuery}
+              onSort={setSortBy}
+              onViewModeChange={setViewMode}
+              notifications={notifications}
+              showAllNotifications={showAllNotifications}
+              setShowAllNotifications={setShowAllNotifications}
+              notificationVisible={notificationVisible}
+              setNotificationVisible={setNotificationVisible}
+              handleShowMore={handleShowMore}
+            />
+          </div>
         </div>
 
         {/* Pinned notes section */}
@@ -119,10 +115,9 @@ const Home = () => {
           <NotePinnedSection
             isPinnedExpanded={isPinnedExpanded}
             setIsPinnedExpanded={setIsPinnedExpanded}
-            displayedPinnedNotes={displayedPinnedNotes}
+            pinnedNotes={pinnedNotes}
             handleNoteClick={handleNoteClick}
             togglePinNote={togglePinNote}
-            remainingPinnedCount={remainingPinnedCount}
           />
         )}
 

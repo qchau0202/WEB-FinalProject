@@ -3,11 +3,14 @@ import React, {
   useContext,
   useState,
   useEffect,
+  useCallback,
+  useMemo,
   useRef,
 } from "react";
 import { useNavigate } from "react-router-dom";
 import { noteService } from "../services";
 import { attachmentService } from "../services/attachmentService";
+import { useDebouncedCallback } from "../hooks/useDebounce";
 import toast from "react-hot-toast";
 
 const NotesContext = createContext();
@@ -30,90 +33,119 @@ export const NoteProvider = ({
   const [lockAction, setLockAction] = useState(null);
   const [attachments, setAttachments] = useState([]);
   const navigate = useNavigate();
-  const debounceRef = useRef();
+  const saveController = useRef(null);
 
+  // Memoize the note update callback
+  const updateNoteCallback = useCallback(
+    (newTitle, newContent) => {
+      if (newTitle !== note.title || newContent !== note.content) {
+        // Cancel previous request
+        if (saveController.current) {
+          saveController.current.abort();
+        }
+        saveController.current = new AbortController();
+        const updatedNote = {
+          title: newTitle,
+          content: newContent,
+          updated_at: new Date().toISOString(),
+        };
+        onUpdate(note.uuid, updatedNote, saveController.current.signal);
+      }
+    },
+    [note.title, note.content, note.uuid, onUpdate]
+  );
+
+  const debouncedUpdate = useDebouncedCallback(updateNoteCallback, 800);
+
+  // Only update local state if the note content actually changed
   useEffect(() => {
-    setTitle(note.title);
-    setContent(note.content);
-    setLabels(note.labels || []);
-    setFiles(note.files || []);
+    if (note.title !== title) setTitle(note.title);
+    if (note.content !== content) setContent(note.content);
+    if (JSON.stringify(note.labels) !== JSON.stringify(labels))
+      setLabels(note.labels || []);
+    if (JSON.stringify(note.files) !== JSON.stringify(files))
+      setFiles(note.files || []);
   }, [note]);
 
-  const handleAddLabel = async (label) => {
-    try {
-      // Always map to IDs, whether note.labels are objects or numbers
-      const currentLabelIds = note.labels
-        ? note.labels.map((l) => (typeof l === "object" ? l.id : l))
-        : [];
-      const newLabelIds = [...currentLabelIds, label.id];
-      const uniqueLabelIds = Array.from(new Set(newLabelIds));
-      const response = await noteService.updateNote(note.uuid, {
-        labels: uniqueLabelIds,
-        title: note.title,
-        content: note.content,
-      });
-      onUpdate(note.uuid, response.note);
-    } catch (error) {
-      console.error("Failed to add label:", error, error?.response?.data);
-    }
-  };
+  const handleAddLabel = useCallback(
+    async (label) => {
+      try {
+        const currentLabelIds = note.labels
+          ? note.labels.map((l) => (typeof l === "object" ? l.id : l))
+          : [];
+        const newLabelIds = [...currentLabelIds, label.id];
+        const uniqueLabelIds = Array.from(new Set(newLabelIds));
+        const response = await noteService.updateNote(note.uuid, {
+          labels: uniqueLabelIds,
+          title: note.title,
+          content: note.content,
+        });
+        onUpdate(note.uuid, response.note);
+      } catch (error) {
+        console.error("Failed to add label:", error, error?.response?.data);
+      }
+    },
+    [note, onUpdate]
+  );
 
-  const handleRemoveLabel = async (label) => {
-    try {
-      // Always map to IDs, whether note.labels are objects or numbers
-      const currentLabelIds = note.labels
-        ? note.labels.map((l) => (typeof l === "object" ? l.id : l))
-        : [];
-      const newLabelIds = currentLabelIds.filter((id) => id !== label.id);
-      const response = await noteService.updateNote(note.uuid, {
-        labels: newLabelIds,
-        title: note.title,
-        content: note.content,
-      });
-      onUpdate(note.uuid, response.note);
-    } catch (error) {
-      console.error("Failed to remove label:", error, error?.response?.data);
-    }
-  };
+  const handleRemoveLabel = useCallback(
+    async (label) => {
+      try {
+        const currentLabelIds = note.labels
+          ? note.labels.map((l) => (typeof l === "object" ? l.id : l))
+          : [];
+        const newLabelIds = currentLabelIds.filter((id) => id !== label.id);
+        const response = await noteService.updateNote(note.uuid, {
+          labels: newLabelIds,
+          title: note.title,
+          content: note.content,
+        });
+        onUpdate(note.uuid, response.note);
+      } catch (error) {
+        console.error("Failed to remove label:", error, error?.response?.data);
+      }
+    },
+    [note, onUpdate]
+  );
 
-  const handlePin = () => {
+  const handlePin = useCallback(() => {
     onUpdate(note.uuid, {
       is_pinned: !note.is_pinned,
       pinned_at: !note.is_pinned ? new Date().toISOString() : null,
     });
-  };
+  }, [note, onUpdate]);
 
-  const handleDrop = (e) => {
-    e.preventDefault();
-    const droppedFiles = Array.from(e.dataTransfer.files);
-    const validFiles = droppedFiles.filter(
-      (file) => file.size <= 5 * 1024 * 1024
-    );
-    const newFiles = validFiles.map((file) => ({
-      name: file.name,
-      size: file.size,
-    }));
-    setFiles([...files, ...newFiles]);
-    onUpdate({
-      ...note,
-      files: [...files, ...newFiles],
-      updatedAt: new Date().toISOString(),
-    });
-  };
-
-  const handleInput = (newTitle, newContent) => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      const updatedNote = {
-        title: newTitle,
-        content: newContent,
+  const handleDrop = useCallback(
+    (e) => {
+      e.preventDefault();
+      const droppedFiles = Array.from(e.dataTransfer.files);
+      const validFiles = droppedFiles.filter(
+        (file) => file.size <= 5 * 1024 * 1024
+      );
+      const newFiles = validFiles.map((file) => ({
+        name: file.name,
+        size: file.size,
+      }));
+      setFiles((prev) => [...prev, ...newFiles]);
+      onUpdate(note.uuid, {
+        ...note,
+        files: [...files, ...newFiles],
         updated_at: new Date().toISOString(),
-      };
-      onUpdate(note.uuid, updatedNote);
-    }, 500);
-  };
+      });
+    },
+    [note, files, onUpdate]
+  );
 
-  const handleDelete = async () => {
+  const handleInput = useCallback(
+    (newTitle, newContent) => {
+      setTitle(newTitle);
+      setContent(newContent);
+      debouncedUpdate(newTitle, newContent);
+    },
+    [debouncedUpdate]
+  );
+
+  const handleDelete = useCallback(async () => {
     try {
       await noteService.deleteNote(note.uuid);
       onDelete(note.uuid);
@@ -124,24 +156,34 @@ export const NoteProvider = ({
     } catch (error) {
       console.error("Failed to delete note:", error);
     }
-  };
+  }, [note.uuid, onDelete, isDetailView, navigate]);
 
-  const handleFileUpload = async (file) => {
-    if (!file || !note?.uuid) return;
-    try {
-      await attachmentService.uploadAttachment(note.uuid, file);
-      toast.success("File uploaded!");
-      onUpdate(note.uuid, { _isSaving: true });
-      await noteService.updateNote(note.uuid, {});
-      onUpdate(note.uuid, { _isSaving: false });
-      await refreshAttachments();
-    } catch {
-      toast.error("Failed to upload file");
-      onUpdate(note.uuid, { _isSaving: false });
-    }
-  };
+  const handleFileUpload = useCallback(
+    async (files) => {
+      if (!files || !note?.uuid) return;
+      const fileArray = Array.isArray(files) ? files : [files];
+      try {
+        for (const file of fileArray) {
+          await attachmentService.uploadAttachment(note.uuid, file);
+        }
+        toast.success(
+          fileArray.length > 1
+            ? `Uploaded ${fileArray.length} files!`
+            : "File uploaded!"
+        );
+        onUpdate(note.uuid, { _isSaving: true });
+        await noteService.updateNote(note.uuid, {});
+        onUpdate(note.uuid, { _isSaving: false });
+        await refreshAttachments();
+      } catch {
+        toast.error("Failed to upload file(s)");
+        onUpdate(note.uuid, { _isSaving: false });
+      }
+    },
+    [note, onUpdate]
+  );
 
-  const refreshAttachments = async () => {
+  const refreshAttachments = useCallback(async () => {
     if (!note?.uuid) return;
     try {
       const files = await attachmentService.getAttachments(note.uuid);
@@ -149,41 +191,67 @@ export const NoteProvider = ({
     } catch {
       setAttachments([]);
     }
-  };
-
-  useEffect(() => {
-    refreshAttachments();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [note?.uuid]);
 
-  const value = {
-    note,
-    title,
-    setTitle,
-    content,
-    setContent,
-    labels,
-    files,
-    confirmDelete,
-    setConfirmDelete,
-    isDetailView,
-    viewMode,
-    navigate,
-    handleAddLabel,
-    handleRemoveLabel,
-    handlePin,
-    handleDrop,
-    handleInput,
-    handleDelete,
-    handleFileUpload,
-    attachments,
-    refreshAttachments,
-    showLockModal,
-    setShowLockModal,
-    lockAction,
-    setLockAction,
-    onLockStateChange,
-  };
+  useEffect(() => {
+    if (note?.uuid) {
+      refreshAttachments();
+    }
+  }, [note?.uuid]);
+
+  const value = useMemo(
+    () => ({
+      note,
+      title,
+      setTitle,
+      content,
+      setContent,
+      labels,
+      files,
+      confirmDelete,
+      setConfirmDelete,
+      isDetailView,
+      viewMode,
+      navigate,
+      handleAddLabel,
+      handleRemoveLabel,
+      handlePin,
+      handleDrop,
+      handleInput,
+      handleDelete,
+      handleFileUpload,
+      attachments,
+      refreshAttachments,
+      showLockModal,
+      setShowLockModal,
+      lockAction,
+      setLockAction,
+      onLockStateChange,
+    }),
+    [
+      note,
+      title,
+      content,
+      labels,
+      files,
+      confirmDelete,
+      isDetailView,
+      viewMode,
+      navigate,
+      handleAddLabel,
+      handleRemoveLabel,
+      handlePin,
+      handleDrop,
+      handleInput,
+      handleDelete,
+      handleFileUpload,
+      attachments,
+      refreshAttachments,
+      showLockModal,
+      lockAction,
+      onLockStateChange,
+    ]
+  );
 
   return (
     <NotesContext.Provider value={value}>{children}</NotesContext.Provider>

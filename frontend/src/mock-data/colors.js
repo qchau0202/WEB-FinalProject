@@ -81,17 +81,6 @@ export const statusColors = {
   },
 };
 
-// Label Colors
-export const labelColors = {
-  work: "#000000", // Black - Work related labels
-  study: "#1890ff", // Blue - Study related labels
-  exam: "#722ed1", // Purple - Exam related labels
-  urgent: "#f5222d", // Red - Urgent related labels
-  personal: "#52c41a", // Green - Personal related labels
-  ideas: "#2f54eb", // Indigo - Ideas related labels
-  relax: "#eb2f96", // Pink - Relax related labels
-};
-
 // UI Element Colors
 export const uiColors = {
   background: {

@@ -51,9 +51,7 @@ const ProfilePreferences = () => {
       setFontSize(tempFontSize);
       setNoteColors(tempNoteColors);
       setIsEditing(false);
-      toast.success(
-        "Preferences saved"
-      );
+      toast.success("Preferences saved");
     } catch {
       toast.error("Failed to save preferences. Please try again");
     } finally {
@@ -64,9 +62,7 @@ const ProfilePreferences = () => {
   const handleResetToDefault = () => {
     setTempFontSize("medium");
     setTempNoteColors([currentThemeColors.primary[500]]);
-    toast.success(
-      "Preferences have been reset to default"
-    );
+    toast.success("Preferences have been reset to default");
   };
 
   return (
@@ -184,7 +180,7 @@ const ProfilePreferences = () => {
         </div>
 
         <div
-          className={`flex gap-2 pt-6 border-t ${themeClasses.border.primary}`}
+          className={`flex flex-col gap-2 pt-6 border-t ${themeClasses.border.primary} sm:flex-row`}
         >
           {isEditing ? (
             <>
@@ -192,15 +188,28 @@ const ProfilePreferences = () => {
                 type="primary"
                 onClick={handleSavePreferences}
                 loading={isSaving}
+                className="w-full sm:w-auto"
               >
                 Save Preferences
               </Button>
-              <Button onClick={() => setIsEditing(false)}>Cancel</Button>
+              <Button
+                onClick={() => setIsEditing(false)}
+                className="w-full sm:w-auto"
+              >
+                Cancel
+              </Button>
             </>
           ) : (
-            <Button onClick={() => setIsEditing(true)}>Edit Preferences</Button>
+            <Button
+              onClick={() => setIsEditing(true)}
+              className="w-full sm:w-auto"
+            >
+              Edit Preferences
+            </Button>
           )}
-          <Button onClick={handleResetToDefault}>Reset to Default</Button>
+          <Button onClick={handleResetToDefault} className="w-full sm:w-auto">
+            Reset to Default
+          </Button>
         </div>
       </Form>
     </div>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation, matchPath } from "react-router-dom";
 import { App } from "antd";
 import Sidebar from "../components/common/Sidebar";
 import { useTheme } from "../contexts/ThemeContext";
@@ -7,10 +7,19 @@ import { useTheme } from "../contexts/ThemeContext";
 const AppLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
   const { theme } = useTheme();
+  const location = useLocation();
+
+  // Detect if current route is NoteDetail
+  const isNoteDetail = matchPath("/note/:id", location.pathname);
+  const hideBottomNav = !!isNoteDetail;
 
   return (
     <div className="flex h-screen">
-      <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
+      <Sidebar
+        collapsed={collapsed}
+        setCollapsed={setCollapsed}
+        hideBottomNav={hideBottomNav}
+      />
       {/* Backdrop for mobile when sidebar is open */}
       <div
         className={`fixed inset-0 bg-black bg-opacity-30 transition-opacity duration-200 z-30 ${

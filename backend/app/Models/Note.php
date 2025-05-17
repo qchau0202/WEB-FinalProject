@@ -58,7 +58,7 @@ class Note extends Model
     public function collaborators()
     {
         return $this->belongsToMany(User::class, 'note_collaborators', 'note_uuid', 'user_uuid')
-            ->withPivot(['permission', 'is_accepted'])
+            ->withPivot(['permission', 'status', 'accepted_at', 'shared_by'])
             ->withTimestamps();
     }
 
