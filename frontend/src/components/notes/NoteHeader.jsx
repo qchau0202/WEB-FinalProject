@@ -8,13 +8,16 @@ import {
   UnlockOutlined,
   CheckCircleFilled,
 } from "@ant-design/icons";
-import { AiOutlineUsergroupAdd } from "react-icons/ai";
+import { FaUserGroup } from "react-icons/fa6";
 import { CgSpinner } from "react-icons/cg";
-import { Button, Dropdown, Tooltip, Spin } from "antd";
+import { Button, Dropdown, Tooltip, Spin, Avatar } from "antd";
 import { useNote } from "../../contexts/NotesContext";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useRef, useState, useEffect } from "react";
 import { noteService } from "../../services/noteService";
+import { mockCollaborators } from "../../mock-data/collaborators";
+import NoteCollaboratorsModal from "./NoteCollaboratorsModal"; // Import the modal
+
 
 const formatDate = (dateString) => {
   if (!dateString) return "";
@@ -40,6 +43,7 @@ const NoteHeader = () => {
   const { theme, fontSize, getTitleFontSizeClass, themeClasses } = useTheme();
 
   const titleFontSizeClass = getTitleFontSizeClass(fontSize);
+  const [showCollaboratorsModal, setShowCollaboratorsModal] = useState(false);
 
   // Saving state for visual feedback
   const [isSaving, setIsSaving] = useState(false);
@@ -201,7 +205,7 @@ const NoteHeader = () => {
                   </span>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
                 <Tooltip
                   title={note.is_pinned ? "Unpin" : "Pin"}
                   className={themeClasses.font[fontSize]}
@@ -248,32 +252,24 @@ const NoteHeader = () => {
                     />
                   </Tooltip>
                 )}
-                <Tooltip title="Invite" className={themeClasses.font[fontSize]}>
-                  <Button
-                    icon={
-                      <div className={themeClasses.font[fontSize]}>
-                        <AiOutlineUsergroupAdd />
-                      </div>
-                    }
-                    className={`text-lg ${
-                      theme === "dark" ? "text-gray-200" : "text-gray-600"
-                    } ${themeClasses.font[fontSize]}`}
-                  />
-                </Tooltip>
-
-                <Tooltip title="Delete" className={themeClasses.font[fontSize]}>
-                  <Button
-                    icon={
-                      <div className={themeClasses.font[fontSize]}>
-                        <DeleteOutlined />
-                      </div>
-                    }
-                    danger
-                    onClick={() => setConfirmDelete(true)}
-                  />
-                </Tooltip>
-
-                <Tooltip title="More" className={themeClasses.font[fontSize]}>
+                {mockCollaborators.length > 0 && (
+                  <Avatar.Group max={4} size="small">
+                    {mockCollaborators.map((collab) => (
+                      <Tooltip
+                        title={`${collab.name} (${collab.permission})`}
+                        key={collab.uuid}
+                      >
+                        <Avatar src={collab.avatarUrl}>
+                          {collab.name?.[0] || collab.email?.[0]}
+                        </Avatar>
+                      </Tooltip>
+                    ))}
+                  </Avatar.Group>
+                )}
+                <Tooltip
+                  title="Invite/Manage Collaborators"
+                  className={themeClasses.font[fontSize]}
+                >
                   <Dropdown
                     menu={{ ...menu, className: themeClasses.font[fontSize] }}
                     trigger={["click"]}
@@ -373,6 +369,7 @@ const NoteHeader = () => {
                 </div>
               </div>
             </Tooltip>
+
             {note.lock_feature_enabled && (
               <Tooltip
                 title={note.is_locked ? "Unlock Note" : "Lock Note"}
@@ -387,7 +384,28 @@ const NoteHeader = () => {
                   onClick={handleLockClick}
                 >
                   <div className={themeClasses.font[fontSize]}>
-                    {note.is_locked ?  <LockOutlined />:<UnlockOutlined />}
+                    {note.is_locked ? <LockOutlined /> : <UnlockOutlined />}
+                  </div>
+                </div>
+              </Tooltip>
+            )}
+            {mockCollaborators.length > 0 && (
+              <Tooltip
+                title={`${mockCollaborators.length} collaborator${
+                  mockCollaborators.length > 1 ? "s" : ""
+                }`}
+                className={themeClasses.font[fontSize]}
+              >
+                <div
+                  className={`p-1 rounded-full ${
+                    theme === "dark"
+                      ? "hover:bg-gray-700 text-gray-300"
+                      : "hover:bg-gray-100 text-gray-500"
+                  } cursor-pointer ${themeClasses.font[fontSize]}`}
+                  onClick={() => setShowCollaboratorsModal(true)}
+                >
+                  <div className={themeClasses.font[fontSize]}>
+                    <FaUserGroup className="text-lg" />
                   </div>
                 </div>
               </Tooltip>
@@ -399,8 +417,8 @@ const NoteHeader = () => {
               <div
                 className={`p-1 rounded-full ${
                   theme === "dark"
-                    ? "hover:bg-gray-700 text-white"
-                    : "hover:bg-gray-100"
+                    ? "hover:bg-gray-700 text-gray-300"
+                    : "hover:bg-gray-100 text-gray-500"
                 } cursor-pointer ${themeClasses.font[fontSize]}`}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -415,8 +433,8 @@ const NoteHeader = () => {
                 <div
                   className={`p-1 rounded-full ${
                     theme === "dark"
-                      ? "hover:bg-gray-700 text-white"
-                      : "hover:bg-gray-100"
+                      ? "hover:bg-gray-700 text-gray-300"
+                      : "hover:bg-gray-100 text-gray-500"
                   } ${themeClasses.font[fontSize]}`}
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -427,6 +445,10 @@ const NoteHeader = () => {
           </div>
         )}
       </div>
+      <NoteCollaboratorsModal
+        open={showCollaboratorsModal}
+        onClose={() => setShowCollaboratorsModal(false)}
+      />
     </>
   );
 };

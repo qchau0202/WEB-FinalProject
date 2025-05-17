@@ -3,7 +3,7 @@ import React, {
   useContext,
   useState,
   useEffect,
-  useRef,
+  // useRef,
 } from "react";
 import { authService } from "../services/authService";
 
@@ -23,7 +23,7 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const pollingRef = useRef(null);
+  // const pollingRef = useRef(null);
 
   // Fetch user info from backend
   const fetchUser = async () => {

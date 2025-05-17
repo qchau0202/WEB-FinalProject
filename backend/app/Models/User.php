@@ -67,6 +67,11 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
+    public function noteCollaborations()
+    {
+        return $this->hasMany(NoteCollaborator::class, 'user_uuid', 'uuid');
+    }
+
     public function getAvatarUrlAttribute()
     {
         if (!$this->avatar) {
