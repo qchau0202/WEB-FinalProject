@@ -134,7 +134,7 @@ class NoteController extends Controller
 
         // Check if user has permission to edit
         if ($note->user_id !== $user->uuid && 
-            !$note->collaborators()->where('user_uuid', $user->uuid)->where('status', 'accepted')->exists()) {
+            !$note->collaborators()->where('user_uuid', $user->uuid)->where('is_accepted', true)->exists()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 

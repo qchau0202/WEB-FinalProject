@@ -9,8 +9,9 @@ import {
   CheckCircleFilled,
 } from "@ant-design/icons";
 import { FaUserGroup } from "react-icons/fa6";
+import { FaUserGroup } from "react-icons/fa6";
 import { CgSpinner } from "react-icons/cg";
-import { Button, Dropdown, Tooltip, Spin } from "antd";
+import { Button, Dropdown, Tooltip, Spin, Avatar } from "antd";
 import { useNote } from "../../contexts/NotesContext";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useRef, useState, useEffect } from "react";
@@ -44,6 +45,7 @@ const NoteHeader = () => {
   const [showCollaboratorsModal, setShowCollaboratorsModal] = useState(false);
 
   const titleFontSizeClass = getTitleFontSizeClass(fontSize);
+  const [showCollaboratorsModal, setShowCollaboratorsModal] = useState(false);
 
   // Saving state for visual feedback
   const [isSaving, setIsSaving] = useState(false);
@@ -215,7 +217,7 @@ const NoteHeader = () => {
                   </span>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
                 <Tooltip
                   title={note.is_pinned ? "Unpin" : "Pin"}
                   className={themeClasses.font[fontSize]}
@@ -439,8 +441,8 @@ const NoteHeader = () => {
               <div
                 className={`p-1 rounded-full ${
                   theme === "dark"
-                    ? "hover:bg-gray-700 text-white"
-                    : "hover:bg-gray-100"
+                    ? "hover:bg-gray-700 text-gray-300"
+                    : "hover:bg-gray-100 text-gray-500"
                 } cursor-pointer ${themeClasses.font[fontSize]}`}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -455,8 +457,8 @@ const NoteHeader = () => {
                 <div
                   className={`p-1 rounded-full ${
                     theme === "dark"
-                      ? "hover:bg-gray-700 text-white"
-                      : "hover:bg-gray-100"
+                      ? "hover:bg-gray-700 text-gray-300"
+                      : "hover:bg-gray-100 text-gray-500"
                   } ${themeClasses.font[fontSize]}`}
                   onClick={(e) => e.stopPropagation()}
                 >

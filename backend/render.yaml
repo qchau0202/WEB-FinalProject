@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: notelit-backend
+    env: php
+    buildCommand: composer install --no-dev --optimize-autoloader
+    startCommand: php artisan serve --port=$PORT
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_URL
+        sync: false
+      - key: DB_CONNECTION
+        value: mysql
+      - key: CACHE_DRIVER
+        value: file
+      - key: SESSION_DRIVER
+        value: file
+      - key: QUEUE_CONNECTION
+        value: sync
+      - key: MAIL_MAILER
+        value: smtp
+      - key: FILESYSTEM_DISK
+        value: local

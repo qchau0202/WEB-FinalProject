@@ -55,11 +55,22 @@ class Note extends Model
             ->withTimestamps();
     }
 
+    // public function collaborators()
+    // {
+    //     return $this->belongsToMany(User::class, 'note_collaborators', 'note_uuid', 'user_uuid')
+    //         ->withPivot(['permission', 'is_accepted'])
+    //         ->withTimestamps();
+    // }
+
     public function collaborators()
     {
+<<<<<<< HEAD
         return $this->belongsToMany(User::class, 'note_collaborators', 'note_uuid', 'user_uuid')
             ->withPivot(['permission', 'status', 'accepted_at', 'shared_by'])
             ->withTimestamps();
+=======
+        return $this->hasMany(NoteCollaborator::class, 'note_uuid', 'uuid');
+>>>>>>> 6bdd6d7c66b4ef51f188d44a7a11976137dd83f9
     }
 
     public function attachments()
