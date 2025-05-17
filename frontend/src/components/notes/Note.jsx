@@ -58,24 +58,18 @@ const LockedNoteView = ({ note, isDetailView, viewMode }) => {
   if (isDetailView) {
     return (
       <div>
+        <div className="flex items-center p-2">
+          <Button
+            icon={<ArrowLeftOutlined />}
+            type="text"
+            onClick={handleBackClick}
+            style={{ fontWeight: 500 }}
+            className="md:inline-flex"
+          >
+            Back to Home
+          </Button>
+        </div>
         <div className="py-8 px-4 w-full max-w-sm mx-auto flex flex-col justify-center ">
-          <div className="hidden md:flex justify-between mb-2">
-            <Button
-              icon={<ArrowLeftOutlined />}
-              type="text"
-              onClick={handleBackClick}
-              style={{ fontWeight: 500 }}
-              className="md:inline-flex"
-            >
-              Back to Home
-            </Button>
-            <Button
-              icon={<DeleteOutlined />}
-              danger
-              onClick={handleDeleteClick}
-              className="md:ml-2"
-            />
-          </div>
           <div className="flex flex-col items-center flex-1 justify-center">
             <h1
               className={`font-semibold mb-4 mt-2 ${getTitleFontSizeClass(

@@ -37,7 +37,7 @@ const NoteInviteModal = ({ isOpen, onClose, noteUuid }) => {
       form.resetFields();
       onClose();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to send invitation");
+      toast.error(error.response?.data?.message || "Failed to send invitation/User does not exist");
     } finally {
       setLoading(false);
     }

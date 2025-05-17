@@ -3,6 +3,7 @@ import { UserOutlined } from "@ant-design/icons";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useState, useEffect } from "react";
 import { noteService } from "../../services/noteService";
+import { notificationService } from "../../services/notificationService";
 import { toast } from "react-hot-toast";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -20,7 +21,16 @@ const NoteCollaboratorsModal = ({
   const [updating, setUpdating] = useState(null); // userUuid being updated
   const [removing, setRemoving] = useState(null); // userUuid being removed
   const [localCollaborators, setLocalCollaborators] = useState(collaborators);
+  const [notifications, setNotifications] = useState([]);
 
+  const fetchNotifications = async () => {
+    try {
+      const response = await notificationService.getNotifications();
+      setNotifications(Array.isArray(response.data) ? response.data : []);
+    } catch {
+      toast.error("Failed to fetch notifications");
+    }
+  };
   useEffect(() => {
     setLocalCollaborators(collaborators);
   }, [collaborators]);
@@ -58,6 +68,7 @@ const NoteCollaboratorsModal = ({
     try {
       setRemoving(userUuid);
       await noteService.removeCollaborator(noteUuid, userUuid);
+      await fetchNotifications();
       toast.success("Collaborator removed");
     } catch (error) {
       toast.error(
@@ -72,6 +83,7 @@ const NoteCollaboratorsModal = ({
     try {
       setRemoving(userUuid);
       await noteService.removeCollaborator(noteUuid, userUuid);
+      await fetchNotifications();
       toast.success("You have left the collaboration");
       onClose?.();
     } catch (error) {
@@ -121,8 +133,8 @@ const NoteCollaboratorsModal = ({
             <List.Item
               className={`p-4 border-b rounded-lg ${
                 theme === "dark"
-                  ? "border-gray-700 hover:bg-gray-700"
-                  : "border-gray-200 hover:bg-gray-100"
+                  ? "border-gray-700"
+                  : "border-gray-200"
               }`}
             >
               <div className="flex items-center gap-3 w-full p-2 ">
