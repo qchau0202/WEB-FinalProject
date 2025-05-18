@@ -22,9 +22,13 @@ const ProtectedRoute = ({ children }) => {
 };
 
 // Public Route Component
-const PublicRoute = ({ children }) => {
+const PublicRoute = ({ children, allowAuthenticated = false }) => {
   const { isAuthenticated } = useAuth();
-  return !isAuthenticated ? children : <Navigate to="/" replace />;
+  return !isAuthenticated || allowAuthenticated ? (
+    children
+  ) : (
+    <Navigate to="/" replace />
+  );
 };
 
 const router = createBrowserRouter([
@@ -117,7 +121,7 @@ const router = createBrowserRouter([
   {
     path: "/verification-success",
     element: (
-      <PublicRoute>
+      <PublicRoute allowAuthenticated={true}>
         <VerificationSuccess />
       </PublicRoute>
     ),

@@ -412,7 +412,7 @@ class NoteCollaboratorController extends Controller
                 return response()->json(['message' => 'Collaborator not found'], 404);
             }
 
-            // Update using the model's relationship
+            // Update using the model's relationship with proper permission value
             $note->collaborators()->updateExistingPivot($userUuid, [
                 'permission' => $request->permission,
                 'updated_at' => now()

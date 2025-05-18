@@ -40,6 +40,7 @@ const NoteHeader = () => {
     setLockAction,
     onLockStateChange,
     permission,
+    setShowChangePasswordModal,
   } = useNote();
   const { theme, fontSize, getTitleFontSizeClass, themeClasses } = useTheme();
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -146,7 +147,15 @@ const NoteHeader = () => {
               : handleEnableLock,
             disabled: permission !== "owner",
           },
-        ]
+          note.lock_feature_enabled && note.password
+            ? {
+                key: "change-password",
+                label: "Change Password",
+                onClick: () => setShowChangePasswordModal(true),
+                disabled: permission !== "owner",
+              }
+            : null,
+        ].filter(Boolean)
       : [
           {
             key: "invite",
@@ -173,7 +182,15 @@ const NoteHeader = () => {
               : handleEnableLock,
             disabled: permission !== "owner",
           },
-        ],
+          note.lock_feature_enabled && note.password
+            ? {
+                key: "change-password",
+                label: "Change Password",
+                onClick: () => setShowChangePasswordModal(true),
+                disabled: permission !== "owner",
+              }
+            : null,
+        ].filter(Boolean),
   };
 
   return (

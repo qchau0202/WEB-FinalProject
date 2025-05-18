@@ -132,9 +132,7 @@ const NoteCollaboratorsModal = ({
           return (
             <List.Item
               className={`p-4 border-b rounded-lg ${
-                theme === "dark"
-                  ? "border-gray-700"
-                  : "border-gray-200"
+                theme === "dark" ? "border-gray-700" : "border-gray-200"
               }`}
             >
               <div className="flex items-center gap-3 w-full p-2 ">

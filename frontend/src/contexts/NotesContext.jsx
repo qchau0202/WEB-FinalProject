@@ -13,6 +13,8 @@ import { attachmentService } from "../services/attachmentService";
 import { useDebouncedCallback } from "../hooks/useDebounce";
 import toast from "react-hot-toast";
 import { useAuth } from "./AuthContext";
+import NoteLockModal from "../components/notes/NoteLockModal";
+import NoteChangePasswordModal from "../components/notes/NoteChangePasswordModal";
 
 const NotesContext = createContext();
 
@@ -32,6 +34,7 @@ export const NoteProvider = ({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showLockModal, setShowLockModal] = useState(false);
   const [lockAction, setLockAction] = useState(null);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [attachments, setAttachments] = useState([]);
   const navigate = useNavigate();
   const saveController = useRef(null);
@@ -236,6 +239,8 @@ export const NoteProvider = ({
       setShowLockModal,
       lockAction,
       setLockAction,
+      showChangePasswordModal,
+      setShowChangePasswordModal,
       onLockStateChange,
       permission,
     }),
@@ -260,13 +265,18 @@ export const NoteProvider = ({
       refreshAttachments,
       showLockModal,
       lockAction,
+      showChangePasswordModal,
       onLockStateChange,
       permission,
     ]
   );
 
   return (
-    <NotesContext.Provider value={value}>{children}</NotesContext.Provider>
+    <NotesContext.Provider value={value}>
+      {children}
+      <NoteLockModal />
+      <NoteChangePasswordModal />
+    </NotesContext.Provider>
   );
 };
 

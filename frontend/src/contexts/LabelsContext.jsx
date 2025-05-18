@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { labelService } from "../services/labelService";
+import { noteService } from "../services";
 
 const LabelContext = createContext();
 
@@ -47,9 +48,38 @@ export const LabelProvider = ({ children }) => {
       const label = availableLabels.find((l) => l.name === oldName);
       if (!label) return;
       const response = await labelService.updateLabel(label.id, updatedLabel);
+
+      // Update available labels
       setAvailableLabels((prev) =>
         prev.map((l) => (l.id === label.id ? response.label : l))
       );
+
+      // Update notes that use this label
+      try {
+        const notesResponse = await noteService.getAllNotes();
+        const allNotes = [
+          ...notesResponse.own_notes,
+          ...notesResponse.shared_notes,
+        ];
+        const updatedNotes = allNotes.map((note) => {
+          if (note.labels) {
+            const updatedLabels = note.labels.map((l) => {
+              if (l.id === label.id) {
+                return response.label;
+              }
+              return l;
+            });
+            return { ...note, labels: updatedLabels };
+          }
+          return note;
+        });
+        localStorage.setItem(
+          "notelit-notes-cache",
+          JSON.stringify(updatedNotes)
+        );
+      } catch (error) {
+        console.error("Failed to update notes with new label:", error);
+      }
     } catch {
       // handle error (toast, etc.)
     }

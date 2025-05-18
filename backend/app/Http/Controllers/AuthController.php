@@ -69,6 +69,7 @@ class AuthController extends Controller
         }
 
         if ($user->email_verified_at) {
+            Auth::login($user);
             Mail::to($user->email)->send(new VerificationEmail($user, null, true));
             return redirect(env('FRONTEND_URL', 'http://localhost:5173') . '/verification-success');
         }
@@ -77,6 +78,7 @@ class AuthController extends Controller
         $user->verification_token = null;
         $user->save();
 
+        Auth::login($user);
         Mail::to($user->email)->send(new VerificationEmail($user, null, true));
 
         return redirect(env('FRONTEND_URL', 'http://localhost:5173') . '/verification-success');

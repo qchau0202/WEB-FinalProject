@@ -76,6 +76,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/disable', [NoteController::class, 'disableLock']);
             Route::post('/toggle', [NoteController::class, 'toggleLock']);
             Route::post('/verify', [NoteController::class, 'verifyLockPassword']);
+            Route::post('/change-password', [NoteController::class, 'changePassword']);
         });
     });
 

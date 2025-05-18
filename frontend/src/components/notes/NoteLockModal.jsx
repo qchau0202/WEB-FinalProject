@@ -52,7 +52,6 @@ const NoteLockModal = () => {
 
         // Lock the note with the password
         const response = await noteService.lockNote(note.uuid, password);
-        // message.success("Note locked successfully");
         // Update local state
         onLockStateChange?.(response.note);
       } else if (isUnlock) {
@@ -73,7 +72,6 @@ const NoteLockModal = () => {
         }
         // Then unlock the note
         const response = await noteService.unlockNote(note.uuid, password);
-        // message.success("Note unlocked successfully");
         // Update local state
         onLockStateChange?.(response.note);
       } else if (isDisable) {
@@ -108,12 +106,11 @@ const NoteLockModal = () => {
     } catch (err) {
       console.error("Lock operation error:", err);
       const errorMessage =
-        err.response?.data?.errors?.current_password?.[0] ||
         err.response?.data?.errors?.password?.[0] ||
+        err.response?.data?.errors?.current_password?.[0] ||
         err.response?.data?.message ||
         "An error occurred while performing the lock operation";
       setError(errorMessage);
-      // message.error(errorMessage);
       setLoading(false);
     }
   };

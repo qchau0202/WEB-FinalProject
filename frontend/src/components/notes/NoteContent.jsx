@@ -57,7 +57,7 @@ const NoteContent = () => {
         readOnly={permission !== "owner" && permission !== "edit"}
       />
       <div
-        className={`flex flex-col gap-2 md:flex-row md:items-center px-5 py-3 border-t ${
+        className={`flex flex-col justify-between gap-2 md:flex-row md:items-center px-5 py-3 border-t ${
           themeClasses.border.primary
         } ${themeClasses.bg.secondary} rounded-b-lg ${
           isDetailView ? "p-6" : ""

@@ -38,6 +38,25 @@ class NoteController extends Controller
         ]);
     }
 
+    private function isPasswordUnique($password, $excludeNoteId = null)
+    {
+        // Get all notes with passwords
+        $query = Note::whereNotNull('password');
+        if ($excludeNoteId) {
+            $query->where('id', '!=', $excludeNoteId);
+        }
+        $notes = $query->get();
+
+        // Check if any note has this password
+        foreach ($notes as $note) {
+            if (Hash::check($password, $note->password)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -47,7 +66,16 @@ class NoteController extends Controller
             'is_locked' => 'boolean',
             'is_pinned' => 'boolean',
             'pinned_at' => 'date|nullable',
-            'password' => 'required_if:is_locked,true|string|min:6',
+            'password' => [
+                'required_if:is_locked,true',
+                'string',
+                'min:6',
+                function ($attribute, $value, $fail) {
+                    if (!$this->isPasswordUnique($value)) {
+                        $fail('This password is already being used by another note.');
+                    }
+                }
+            ],
             'labels' => 'array',
             'labels.*' => 'exists:labels,id'
         ]);
@@ -58,7 +86,7 @@ class NoteController extends Controller
 
         $user = Auth::user();
         
-        $password = $request->password ? (preg_match('/^\$2y\$/', $request->password) ? $request->password : Hash::make($request->password)) : null;
+        $password = $request->password ? Hash::make($request->password) : null;
         $note = Note::create([
             'user_id' => $user->uuid,
             'title' => $request->title,
@@ -114,7 +142,16 @@ class NoteController extends Controller
             'is_locked' => 'boolean',
             'is_pinned' => 'boolean',
             'pinned_at' => 'date|nullable',
-            'password' => 'nullable|string|min:6',
+            'password' => [
+                'nullable',
+                'string',
+                'min:6',
+                function ($attribute, $value, $fail) use ($note) {
+                    if ($value && !$this->isPasswordUnique($value, $note->id)) {
+                        $fail('This password is already being used by another note.');
+                    }
+                }
+            ],
             'current_password' => function ($attribute, $value, $fail) use ($note, $request) {
                 if ($request->boolean('lock_feature_enabled') === false && $note->password && empty($value)) {
                     $fail('The current password is required to disable the lock feature.');
@@ -433,7 +470,15 @@ class NoteController extends Controller
         $note = Note::findOrFail($uuid);
 
         $rules = [
-            'password' => 'required_if:is_locked,true|min:1',
+            'password' => [
+                'required_if:is_locked,true',
+                'min:1',
+                function ($attribute, $value, $fail) use ($note) {
+                    if ($value && !$this->isPasswordUnique($value, $note->id)) {
+                        $fail('This password is already being used by another note.');
+                    }
+                }
+            ],
         ];
 
         // Only require current_password if unlocking a locked note with a password
@@ -548,6 +593,48 @@ class NoteController extends Controller
 
         return response()->json([
             'message' => 'Label removed successfully',
+            'note' => $note->fresh(['labels', 'collaborators'])
+        ]);
+    }
+
+    public function changePassword(Request $request, $uuid)
+    {
+        $validator = Validator::make($request->all(), [
+            'current_password' => 'required|string|min:1',
+            'new_password' => 'required|string|min:6',
+            'confirm_password' => 'required|same:new_password'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $user = Auth::user();
+        $note = Note::findOrFail($uuid);
+
+        if ($note->user_id !== $user->uuid) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Verify current password
+        if (!$note->verifyPassword($request->current_password)) {
+            return response()->json(['errors' => ['current_password' => ['Invalid current password']]], 422);
+        }
+
+        // Check if new password is unique
+        if (!$this->isPasswordUnique($request->new_password, $note->id)) {
+            return response()->json(['errors' => ['new_password' => ['This password is already being used by another note']]], 422);
+        }
+
+        // Update the password
+        $note->update([
+            'password' => Hash::make($request->new_password),
+            'last_edited_at' => now(),
+            'last_edited_by' => $user->uuid
+        ]);
+
+        return response()->json([
+            'message' => 'Password changed successfully',
             'note' => $note->fresh(['labels', 'collaborators'])
         ]);
     }

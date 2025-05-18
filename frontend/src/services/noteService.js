@@ -226,6 +226,23 @@ export const noteService = {
     }
   },
 
+  changePassword: async (noteUuid, data) => {
+    await ensureCsrfToken();
+    try {
+      const response = await apiClient.post(
+        `/notes/${noteUuid}/lock/change-password`,
+        data
+      );
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Change password error:",
+        error.response?.data || error.message
+      );
+      throw error;
+    }
+  },
+
   disableLockFeature: async (noteUuid, currentPassword) => {
     await ensureCsrfToken();
     try {

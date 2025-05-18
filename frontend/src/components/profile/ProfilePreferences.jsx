@@ -26,9 +26,20 @@ const ProfilePreferences = () => {
     }
   };
 
-  const handleResetToDefault = () => {
-    setTempFontSize("medium");
-    toast.success("Preferences have been reset to default");
+  const handleResetToDefault = async () => {
+    setIsSaving(true);
+    try {
+      // Simulate API call or any async operation
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      setFontSize("medium");
+      setTempFontSize("medium");
+      setIsEditing(false);
+      toast.success("Preferences have been reset to default");
+    } catch {
+      toast.error("Failed to reset preferences. Please try again");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -103,7 +114,11 @@ const ProfilePreferences = () => {
               Edit Preferences
             </Button>
           )}
-          <Button onClick={handleResetToDefault} className="w-full sm:w-auto">
+          <Button
+            onClick={handleResetToDefault}
+            className="w-full sm:w-auto"
+            loading={isSaving}
+          >
             Reset to Default
           </Button>
         </div>
