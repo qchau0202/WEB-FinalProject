@@ -17,7 +17,6 @@ Developed by:
 
 ```bash
 git clone https://github.com/qchau0202/WEB-FinalProject.git
-cd notelit
 ```
 
 ## 2. Database Setup
