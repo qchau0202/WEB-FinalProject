@@ -47,13 +47,8 @@ php artisan migrate:fresh
 From the `backend` directory:
 
 ```bash
+cd backend
 composer install
-```
-
-If you use Laravel Mix/Vite for assets:
-
-```bash
-npm install
 ```
 
 ### 3.2. Frontend
@@ -61,6 +56,7 @@ npm install
 From the `frontend` directory:
 
 ```bash
+cd frontend
 npm install
 ```
 
@@ -74,7 +70,7 @@ npm install
 cp .env.example .env
 ```
 
-- Set your database info in `.env`:
+- Set your database info and other credentials in `.env`:
 
 ```
 DB_DATABASE=notelit
