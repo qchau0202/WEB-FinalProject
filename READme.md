@@ -1,5 +1,3 @@
-turn this into text (normal)
-
 # Notelit
 
 Developed by:
