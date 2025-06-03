@@ -122,3 +122,10 @@ SELECT * FROM users;
 - Make sure your MySQL server is running and credentials are correct.
 - If you change the database, re-run migrations with `php artisan migrate:fresh`.
 - For CORS/API issues, check your backend `.env` and CORS middleware.
+
+## 8. Website home page images
+Default
+![default](home_default.png)
+
+Dark mode
+![darkmode](home_darkmode.png)
