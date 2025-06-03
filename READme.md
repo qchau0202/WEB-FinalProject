@@ -124,8 +124,8 @@ SELECT * FROM users;
 - For CORS/API issues, check your backend `.env` and CORS middleware.
 
 ## 8. Website home page images
-Default
+### Default
 ![default](home_default.png)
 
-Dark mode
+### Dark mode
 ![darkmode](home_darkmode.png)
